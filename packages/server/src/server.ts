@@ -1,7 +1,9 @@
 import { timingSafeEqual } from 'node:crypto';
 import type { IncomingMessage } from 'node:http';
+import { relative } from 'node:path';
 import { serve } from '@hono/node-server';
-import { Hono } from 'hono';
+import { serveStatic } from '@hono/node-server/serve-static';
+import { Hono, type Context, type Next } from 'hono';
 import { WebSocketServer, type WebSocket } from 'ws';
 import { applyEvent, type AgentEvent, type AgentMap, type ServerMessage } from '@agentpals/core';
 import { mapClaudeHook, type ClaudeHookPayload } from './providers/claude/mapHook.ts';
@@ -10,6 +12,8 @@ export interface ServerOptions {
   host: string;
   port: number;
   token: string;
+  /** Absolute path to the built UI (packages/ui/dist). Served at `/` when given. */
+  uiDir?: string;
   log?: boolean;
 }
 
@@ -19,7 +23,7 @@ function safeEqual(a: string, b: string): boolean {
   return ab.length === bb.length && timingSafeEqual(ab, bb);
 }
 
-export function createAgentPalsServer({ host, port, token, log = true }: ServerOptions) {
+export function createAgentPalsServer({ host, port, token, uiDir, log = true }: ServerOptions) {
   let agents: AgentMap = {};
   const clients = new Set<WebSocket>();
 
@@ -34,13 +38,16 @@ export function createAgentPalsServer({ host, port, token, log = true }: ServerO
 
   const app = new Hono();
 
-  // Every route needs the token: header for hooks, ?token= for the browser.
-  app.use('*', async (c, next) => {
+  // API, hooks and the WebSocket need the token (header for hooks, ?token= for the browser).
+  // The static UI itself holds no data, so it is served without one.
+  const requireToken = async (c: Context, next: Next) => {
     const header = c.req.header('authorization')?.replace(/^Bearer\s+/i, '');
     const supplied = header ?? c.req.query('token') ?? '';
     if (!safeEqual(supplied, token)) return c.json({ error: 'unauthorized' }, 401);
     await next();
-  });
+  };
+  app.use('/api/*', requireToken);
+  app.use('/hook/*', requireToken);
 
   app.get('/api/health', (c) => c.json({ ok: true }));
   app.get('/api/agents', (c) => c.json(Object.values(agents)));
@@ -51,6 +58,11 @@ export function createAgentPalsServer({ host, port, token, log = true }: ServerO
     if (ev) ingest(ev);
     return c.json({ ok: true, mapped: Boolean(ev) });
   });
+
+  if (uiDir) {
+    // serveStatic resolves `root` against the working directory.
+    app.use('/*', serveStatic({ root: relative(process.cwd(), uiDir) || '.' }));
+  }
 
   const wss = new WebSocketServer({ noServer: true });
   wss.on('connection', (ws) => {

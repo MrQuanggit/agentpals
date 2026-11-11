@@ -1,11 +1,7 @@
-'use client';
-
 import { useEffect, useState } from 'react';
 import type { AgentState, ServerMessage } from '@agentpals/core';
 
 export type Connection = 'connecting' | 'open' | 'closed' | 'no-token';
-
-const SERVER_PORT = process.env.NEXT_PUBLIC_AGENTPALS_PORT ?? '4777';
 
 /** Subscribe to the AgentPals server over WebSocket; reconnects every 2s. */
 export function useAgents() {
@@ -23,7 +19,9 @@ export function useAgents() {
     let stopped = false;
 
     const connect = () => {
-      ws = new WebSocket(`ws://127.0.0.1:${SERVER_PORT}/ws?token=${encodeURIComponent(token)}`);
+      // Same origin: the server serves the built UI; in dev, Vite proxies /ws to the server.
+      const proto = window.location.protocol === 'https:' ? 'wss' : 'ws';
+      ws = new WebSocket(`${proto}://${window.location.host}/ws?token=${encodeURIComponent(token)}`);
       setConn('connecting');
       ws.onopen = () => setConn('open');
       ws.onclose = () => {

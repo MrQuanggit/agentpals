@@ -1,5 +1,3 @@
-'use client';
-
 import { useAgents, type Connection } from '@/lib/useAgents';
 import { DEFAULT_LOOKS, SOURCE_LABEL, STATUS, agentName } from '@/lib/look';
 import { Office, SEAT_COUNT } from './Office';

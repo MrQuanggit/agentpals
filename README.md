@@ -13,12 +13,14 @@ Yêu cầu: Node 20+, pnpm.
 ```bash
 pnpm install
 pnpm install-hooks   # thêm hook AgentPals vào ~/.claude/settings.json (có backup)
-pnpm dev             # server :4777 + UI Next.js :3000
+pnpm dev             # server :4777 + UI Vite :5173 (hot reload)
 ```
 
-Mở link `http://127.0.0.1:3000/?token=...` mà server in ra, rồi mở Claude Code ở một project bất kỳ. Terminal của server sẽ in các event (`→ typing · Edit foo.ts`, `→ waiting`, …) và UI cập nhật danh sách agent.
+Mở link `http://127.0.0.1:5173/?token=...` mà server in ra, rồi mở Claude Code ở một project bất kỳ. Terminal của server sẽ in các event (`→ typing · Edit foo.ts`, `→ waiting`, …) và UI cập nhật danh sách agent.
 
 Chưa muốn đụng vào Claude Code? Trong lúc `pnpm dev` đang chạy, mở terminal khác chạy `pnpm demo` để xem 4 agent giả.
+
+Dùng hằng ngày (1 tiến trình, 1 port): `pnpm start` sẽ build UI rồi chạy server, mở `http://127.0.0.1:4777/?token=...`.
 
 Gỡ hook: `pnpm uninstall-hooks`.
 
@@ -35,7 +37,7 @@ Claude Code ──hook (stdin JSON)──> hooks/claude-hook.mjs ──POST /hoo
 
 - `packages/core` – kiểu `AgentEvent`, `AgentState`, reducer `applyEvent`.
 - `packages/server` – Hono + ws, provider Claude, cài/gỡ hook, CLI.
-- `packages/ui` – Next.js (App Router) + React, văn phòng isometric vẽ bằng SVG.
+- `packages/ui` – React + Vite, văn phòng isometric vẽ bằng SVG. Server phục vụ bản build trên cùng port.
 - `hooks/claude-hook.mjs` – script Claude Code gọi; luôn exit 0, không bao giờ làm chậm agent.
 
 ## Bảo mật

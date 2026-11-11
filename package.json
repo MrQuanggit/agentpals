@@ -7,16 +7,17 @@
   "type": "module",
   "packageManager": "pnpm@10.28.0",
   "engines": {
-    "node": ">=20"
+    "node": ">=20.19"
   },
   "scripts": {
     "dev": "pnpm --parallel --filter @agentpals/server --filter @agentpals/ui dev",
-    "start": "pnpm --filter @agentpals/server start",
+    "start": "pnpm build && pnpm --filter @agentpals/server start",
     "install-hooks": "pnpm --filter @agentpals/server cli install-hooks",
     "uninstall-hooks": "pnpm --filter @agentpals/server cli uninstall-hooks",
     "typecheck": "pnpm -r typecheck",
     "test": "vitest run",
-    "demo": "pnpm --filter @agentpals/server cli demo"
+    "demo": "pnpm --filter @agentpals/server cli demo",
+    "build": "pnpm --filter @agentpals/ui build"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
