@@ -1,6 +1,6 @@
 # AgentPals
 
-Ứng dụng chạy local, biến các agent **Claude Code** và **Codex CLI** đang chạy trên máy bạn thành những nhân vật ngồi trong một văn phòng isometric. Mỗi nhân vật gõ phím khi agent sửa file, đọc khi agent tìm kiếm, và giơ tay khi agent cần bạn duyệt. Nhân vật tuỳ chỉnh được tên, ngoại hình và câu nói.
+Ứng dụng chạy local, biến các agent **Claude Code** và **Codex CLI** đang chạy trên máy bạn thành những nhân vật ngồi trong một văn phòng isometric. Mỗi nhân vật có bàn riêng với 2 màn hình: gõ phím khi agent sửa file, chống cằm đọc khi agent tìm kiếm, giơ tay khi agent cần bạn duyệt, và ra pantry cầm cốc cà phê khi hết việc. Nhân vật tuỳ chỉnh được tên, ngoại hình và câu nói.
 
 ![AgentPals](docs/screenshot.png)
 
@@ -52,7 +52,7 @@ Claude Code / Codex ──hook (stdin JSON)──> hooks/claude-hook.mjs ──P
 1. ✅ Khung monorepo, CI
 2. ✅ Hook Claude Code → server → console
 3. ✅ WebSocket → UI danh sách agent
-4. ✅ Văn phòng isometric SVG + 4 trạng thái + bong bóng thoại
+4. ✅ Văn phòng isometric SVG: 4 bàn 2 màn hình, pantry cho agent rảnh, nhân vật nhiều kiểu tóc/phụ kiện, bong bóng thoại
 5. ✅ Provider Codex (qua Codex hooks)
 6. ⬜ Màn tuỳ chỉnh nhân vật, lưu `~/.agentpals/config.yaml`
 7. ⬜ README có GIF demo

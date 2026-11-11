@@ -1,6 +1,6 @@
 import { useAgents, type Connection } from '@/lib/useAgents';
 import { DEFAULT_LOOKS, SOURCE_LABEL, STATUS, agentName } from '@/lib/look';
-import { Office, SEAT_COUNT } from './Office';
+import { Office, PANTRY_COUNT, SEAT_COUNT, placedCount } from './Office';
 
 const CONN_TEXT: Record<Connection, string> = {
   connecting: 'Đang kết nối…',
@@ -11,7 +11,7 @@ const CONN_TEXT: Record<Connection, string> = {
 
 export function Dashboard() {
   const { agents, conn } = useAgents();
-  const extra = agents.length - SEAT_COUNT;
+  const extra = agents.length - placedCount(agents);
 
   return (
     <div className="app">
@@ -35,7 +35,7 @@ export function Dashboard() {
             </div>
           </div>
           <Office agents={agents} />
-          {extra > 0 && <p className="muted">+{extra} agent chưa có bàn (văn phòng hiện có {SEAT_COUNT} chỗ).</p>}
+          {extra > 0 && <p className="muted">+{extra} agent chưa có chỗ trong văn phòng ({SEAT_COUNT} bàn, {PANTRY_COUNT} chỗ ở pantry), xem danh sách bên phải.</p>}
         </section>
 
         <aside className="card panel">
