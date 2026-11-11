@@ -3,7 +3,7 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { HOST, PORT, getOrCreateToken } from './config.ts';
-import { installClaudeHooks, uninstallClaudeHooks } from './hooksInstaller.ts';
+import { installHooks, uninstallHooks } from './hooksInstaller.ts';
 import { runDemo } from './demo.ts';
 import { createAgentPalsServer } from './server.ts';
 
@@ -25,10 +25,13 @@ switch (cmd) {
     break;
   }
   case 'install-hooks':
-    console.log(`Đã cài hook AgentPals vào ${installClaudeHooks()} (bản cũ lưu ở *.agentpals.bak)`);
+    for (const r of installHooks()) {
+      console.log(r.done ? `✓ ${r.name}: đã cài hook vào ${r.file} (bản cũ lưu ở *.agentpals.bak)` : `- ${r.name}: không thấy cài trên máy, bỏ qua`);
+      if (r.done && r.name === 'Codex') console.log('  Lần đầu mở Codex, gõ /hooks để duyệt (trust) hook mới. Cần Codex ≥ 0.124.');
+    }
     break;
   case 'uninstall-hooks':
-    console.log(`Đã gỡ hook AgentPals khỏi ${uninstallClaudeHooks()}`);
+    for (const r of uninstallHooks()) if (r.done) console.log(`✓ ${r.name}: đã gỡ hook khỏi ${r.file}`);
     break;
   case 'demo':
     await runDemo();

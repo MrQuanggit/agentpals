@@ -29,4 +29,12 @@ describe('server', () => {
     const agents = await (await srv.app.request('/api/agents?token=secret')).json();
     expect(agents[0]).toMatchObject({ agentId: 'claude:s1', status: 'typing' });
   });
+
+  it('routes Codex hooks to the Codex mapper and rejects unknown sources', async () => {
+    const headers = { authorization: 'Bearer secret', 'content-type': 'application/json' };
+    const body = JSON.stringify({ hook_event_name: 'PermissionRequest', session_id: 'c1', tool_name: 'Bash', tool_input: { command: 'npm i' } });
+    expect((await srv.app.request('/hook/codex', { method: 'POST', headers, body })).status).toBe(200);
+    expect(srv.getAgents()['codex:c1']).toMatchObject({ source: 'codex', status: 'waiting' });
+    expect((await srv.app.request('/hook/cursor', { method: 'POST', headers, body })).status).toBe(404);
+  });
 });

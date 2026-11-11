@@ -6,7 +6,17 @@ import { serveStatic } from '@hono/node-server/serve-static';
 import { Hono, type Context, type Next } from 'hono';
 import { WebSocketServer, type WebSocket } from 'ws';
 import { applyEvent, type AgentEvent, type AgentMap, type ServerMessage } from '@agentpals/core';
-import { mapClaudeHook, type ClaudeHookPayload } from './providers/claude/mapHook.ts';
+import { mapClaudeHook } from './providers/claude/mapHook.ts';
+import { mapCodexHook } from './providers/codex/mapHook.ts';
+import type { HookPayloadBase } from './providers/shared.ts';
+
+const MAPPERS: Record<string, (p: HookPayloadBase) => AgentEvent | null> = {
+  claude: mapClaudeHook,
+  codex: mapCodexHook,
+};
+
+/** Idle agents with no events for this long are removed (Codex has no SessionEnd hook). */
+const IDLE_TTL_MS = 30 * 60 * 1000;
 
 export interface ServerOptions {
   host: string;
@@ -52,12 +62,29 @@ export function createAgentPalsServer({ host, port, token, uiDir, log = true }: 
   app.get('/api/health', (c) => c.json({ ok: true }));
   app.get('/api/agents', (c) => c.json(Object.values(agents)));
 
-  app.post('/hook/claude', async (c) => {
-    const payload = (await c.req.json().catch(() => null)) as ClaudeHookPayload | null;
-    const ev = payload ? mapClaudeHook(payload) : null;
+  app.post('/hook/:source', async (c) => {
+    const source = c.req.param('source');
+    const map = MAPPERS[source];
+    if (!map) return c.json({ error: `unknown source: ${source}` }, 404);
+    const payload = (await c.req.json().catch(() => null)) as HookPayloadBase | null;
+    const ev = payload ? map(payload) : null;
     if (ev) ingest(ev);
+    else if (log && payload) {
+      // Helps tune the mappers to new agent versions: run once, copy this line into an issue.
+      console.log(`[${source}] bỏ qua payload: event=${payload.hook_event_name ?? '?'} tool=${payload.tool_name ?? '-'} keys=${Object.keys(payload).join(',')}`);
+    }
     return c.json({ ok: true, mapped: Boolean(ev) });
   });
+
+  const pruneTimer = setInterval(() => {
+    const now = Date.now();
+    for (const a of Object.values(agents)) {
+      if (a.status === 'idle' && now - a.updatedAt > IDLE_TTL_MS) {
+        ingest({ agentId: a.agentId, source: a.source, sessionId: a.sessionId, kind: 'session-end', ts: now });
+      }
+    }
+  }, 60_000);
+  pruneTimer.unref();
 
   if (uiDir) {
     // serveStatic resolves `root` against the working directory.
@@ -87,6 +114,7 @@ export function createAgentPalsServer({ host, port, token, uiDir, log = true }: 
     ingest,
     getAgents: () => agents,
     close: () => {
+      clearInterval(pruneTimer);
       wss.close();
       server.close();
     },

@@ -44,7 +44,9 @@ function Bubble({ agent, cx, by, tail }: { agent: AgentState; cx: number; by: nu
   const waiting = meta.pose === 'waiting';
   const line = truncate(agent.detail ?? meta.label, 32);
   return (
-    <g transform={`translate(${cx},${by})`} className={waiting ? 'pulse' : undefined}>
+    <g transform={`translate(${cx},${by})`}>
+      {/* The animated group must not carry the transform attribute: CSS transforms would replace it. */}
+      <g className={waiting ? 'pulse' : undefined}>
       <rect x={-115} y={-48} width={230} height={48} rx={12} fill={waiting ? '#FFF6E0' : '#FFFFFF'} stroke={waiting ? '#E3A72F' : '#D5DAE3'} strokeWidth={1.5} />
       <polygon points={`${tail - 8},-1 ${tail + 8},-1 ${tail},10`} fill={waiting ? '#FFF6E0' : '#FFFFFF'} />
       <circle cx={-96} cy={-24} r={6} fill={meta.screen} />
@@ -54,6 +56,7 @@ function Bubble({ agent, cx, by, tail }: { agent: AgentState; cx: number; by: nu
       <text x={-82} y={-11} fontSize={11.5} fill={waiting ? '#6B4300' : '#4B5563'}>
         {line}
       </text>
+      </g>
     </g>
   );
 }
@@ -104,7 +107,7 @@ function Character({ look, pose }: { look: Look; pose: Pose }) {
       {/* front arm */}
       {pose === 'typing' && <Arm from={[68, -4]} to={[34, -8]} shirt={shirt} skin={skin} className="bob-a" />}
       {pose === 'reading' && <Arm from={[68, -4]} to={[46, -30]} shirt={shirt} skin={skin} />}
-      {pose === 'waiting' && <Arm from={[70, -6]} to={[78, -44]} shirt={shirt} skin={skin} className="wave" handR={5} />}
+      {pose === 'waiting' && <Arm from={[70, -6]} to={[50, -58]} shirt={shirt} skin={skin} className="wave" handR={5.5} />}
       {pose === 'idle' && (
         <>
           <line x1={68} y1={-6} x2={90} y2={-50} stroke={shirt} strokeWidth={10} strokeLinecap="round" />
