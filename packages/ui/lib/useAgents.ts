@@ -1,7 +1,11 @@
+'use client';
+
 import { useEffect, useState } from 'react';
 import type { AgentState, ServerMessage } from '@agentpals/core';
 
 export type Connection = 'connecting' | 'open' | 'closed' | 'no-token';
+
+const SERVER_PORT = process.env.NEXT_PUBLIC_AGENTPALS_PORT ?? '4777';
 
 /** Subscribe to the AgentPals server over WebSocket; reconnects every 2s. */
 export function useAgents() {
@@ -9,7 +13,7 @@ export function useAgents() {
   const [conn, setConn] = useState<Connection>('connecting');
 
   useEffect(() => {
-    const token = new URLSearchParams(location.search).get('token');
+    const token = new URLSearchParams(window.location.search).get('token');
     if (!token) {
       setConn('no-token');
       return;
@@ -19,8 +23,7 @@ export function useAgents() {
     let stopped = false;
 
     const connect = () => {
-      const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-      ws = new WebSocket(`${proto}://${location.host}/ws?token=${encodeURIComponent(token)}`);
+      ws = new WebSocket(`ws://127.0.0.1:${SERVER_PORT}/ws?token=${encodeURIComponent(token)}`);
       setConn('connecting');
       ws.onopen = () => setConn('open');
       ws.onclose = () => {
@@ -31,14 +34,14 @@ export function useAgents() {
         const msg = JSON.parse(e.data as string) as ServerMessage;
         if (msg.type === 'snapshot') {
           setAgents(Object.fromEntries(msg.agents.map((a) => [a.agentId, a])));
-        } else {
-          setAgents((prev) => {
-            const next = { ...prev };
-            if (msg.agent) next[msg.agent.agentId] = msg.agent;
-            else delete next[msg.event.agentId];
-            return next;
-          });
+          return;
         }
+        setAgents((prev) => {
+          const next = { ...prev };
+          if (msg.agent) next[msg.agent.agentId] = msg.agent;
+          else delete next[msg.event.agentId];
+          return next;
+        });
       };
     };
 
@@ -50,5 +53,6 @@ export function useAgents() {
     };
   }, []);
 
-  return { agents: Object.values(agents), conn };
+  const list = Object.values(agents).sort((a, b) => a.startedAt - b.startedAt);
+  return { agents: list, conn };
 }

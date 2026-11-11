@@ -4,3 +4,6 @@ dist/
 .DS_Store
 .env
 coverage/
+.next/
+next-env.d.ts
+*.tsbuildinfo

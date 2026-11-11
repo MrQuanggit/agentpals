@@ -15,7 +15,8 @@
     "install-hooks": "pnpm --filter @agentpals/server cli install-hooks",
     "uninstall-hooks": "pnpm --filter @agentpals/server cli uninstall-hooks",
     "typecheck": "pnpm -r typecheck",
-    "test": "vitest run"
+    "test": "vitest run",
+    "demo": "pnpm --filter @agentpals/server cli demo"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
