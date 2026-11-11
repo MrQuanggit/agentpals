@@ -1,0 +1,54 @@
+import { useEffect, useState } from 'react';
+import type { AgentState, ServerMessage } from '@agentpals/core';
+
+export type Connection = 'connecting' | 'open' | 'closed' | 'no-token';
+
+/** Subscribe to the AgentPals server over WebSocket; reconnects every 2s. */
+export function useAgents() {
+  const [agents, setAgents] = useState<Record<string, AgentState>>({});
+  const [conn, setConn] = useState<Connection>('connecting');
+
+  useEffect(() => {
+    const token = new URLSearchParams(location.search).get('token');
+    if (!token) {
+      setConn('no-token');
+      return;
+    }
+    let ws: WebSocket | undefined;
+    let timer: number | undefined;
+    let stopped = false;
+
+    const connect = () => {
+      const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+      ws = new WebSocket(`${proto}://${location.host}/ws?token=${encodeURIComponent(token)}`);
+      setConn('connecting');
+      ws.onopen = () => setConn('open');
+      ws.onclose = () => {
+        setConn('closed');
+        if (!stopped) timer = window.setTimeout(connect, 2000);
+      };
+      ws.onmessage = (e) => {
+        const msg = JSON.parse(e.data as string) as ServerMessage;
+        if (msg.type === 'snapshot') {
+          setAgents(Object.fromEntries(msg.agents.map((a) => [a.agentId, a])));
+        } else {
+          setAgents((prev) => {
+            const next = { ...prev };
+            if (msg.agent) next[msg.agent.agentId] = msg.agent;
+            else delete next[msg.event.agentId];
+            return next;
+          });
+        }
+      };
+    };
+
+    connect();
+    return () => {
+      stopped = true;
+      window.clearTimeout(timer);
+      ws?.close();
+    };
+  }, []);
+
+  return { agents: Object.values(agents), conn };
+}

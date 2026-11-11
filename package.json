@@ -1,0 +1,30 @@
+{
+  "name": "agentpals",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Local app that turns your Claude Code / Codex agents into customizable office characters.",
+  "license": "MIT",
+  "type": "module",
+  "packageManager": "pnpm@10.28.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "pnpm --parallel --filter @agentpals/server --filter @agentpals/ui dev",
+    "start": "pnpm --filter @agentpals/server start",
+    "install-hooks": "pnpm --filter @agentpals/server cli install-hooks",
+    "uninstall-hooks": "pnpm --filter @agentpals/server cli uninstall-hooks",
+    "typecheck": "pnpm -r typecheck",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
+  }
+}

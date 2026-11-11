@@ -1,0 +1,25 @@
+{
+  "name": "@agentpals/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "agentpals": "./src/cli.ts"
+  },
+  "scripts": {
+    "dev": "tsx watch src/cli.ts start --dev",
+    "start": "tsx src/cli.ts start",
+    "cli": "tsx src/cli.ts",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@agentpals/core": "workspace:*",
+    "@hono/node-server": "^1.13.0",
+    "hono": "^4.6.0",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.5.0",
+    "tsx": "^4.19.0"
+  }
+}
