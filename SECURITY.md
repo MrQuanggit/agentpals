@@ -34,6 +34,7 @@ AgentPals là ứng dụng chạy **trên máy của bạn**, cho **chính bạn
 **UI (`packages/ui`)**
 - Token lấy từ `?token=` một lần, lưu `sessionStorage` của tab rồi **xoá khỏi thanh địa chỉ**. Thêm `<meta name="referrer" content="no-referrer">`.
 - React tự escape mọi chuỗi; không dùng `dangerouslySetInnerHTML`.
+- Văn phòng 3D (three.js) chạy hoàn toàn trong trình duyệt: texture vẽ bằng canvas trong code, không tải model, ảnh hay HDR từ mạng; bundle không dùng `eval`, `new Function` hay Web Worker nên CSP `script-src 'self'` giữ nguyên. Nhãn tên là phần tử DOM do React render.
 
 **Chuỗi cung ứng**
 - `pnpm audit` chạy trong CI; GitHub Actions pin theo commit SHA, quyền `contents: read`; Dependabot cập nhật hằng tuần.
@@ -41,6 +42,8 @@ AgentPals là ứng dụng chạy **trên máy của bạn**, cho **chính bạn
 
 ## Giới hạn đã biết
 
+- Lần rà soát gần nhất: 2026-11-12, sau khi thêm văn phòng 3D. Kiểm tra lại `pnpm audit`, bundle, header, Host/token/path traversal/giới hạn body và chèn HTML qua tên project trên bản đang chạy; không có phát hiện mới.
+- three, @react-three/fiber và @react-three/drei chỉ được đối chiếu với cơ sở dữ liệu lỗ hổng đã công bố, chưa đọc mã nguồn.
 - UI tải font từ Google Fonts, nên Google biết IP của bạn khi mở trang (không kèm token vì `no-referrer`). Có thể tự host font nếu cần.
 - Việc che bí mật dựa trên mẫu nhận dạng, không bắt được mọi kiểu. Nó là lớp phòng thủ thêm; dữ liệu vốn chỉ hiển thị trên máy bạn.
 - File settings của Claude Code/Codex chứa đường dẫn tuyệt đối tới `hooks/claude-hook.mjs`. Ai sửa được thư mục repo thì chạy được code mỗi khi agent dùng tool, nên đừng đặt repo ở thư mục người khác ghi được.
