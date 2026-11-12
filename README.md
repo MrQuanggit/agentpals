@@ -1,30 +1,65 @@
 # AgentPals
 
-Ứng dụng chạy local, biến các agent **Claude Code** và **Codex CLI** đang chạy trên máy bạn thành những nhân vật ngồi trong một văn phòng 3D (Three.js) xoay và phóng to được. Mỗi nhân vật có bàn riêng với 2 màn hình: gõ phím khi agent sửa file, chống cằm đọc khi agent tìm kiếm, giơ tay khi agent cần bạn duyệt, và ra pantry cầm cốc cà phê khi hết việc. Nhân vật tuỳ chỉnh được tên, ngoại hình và câu nói.
+Ứng dụng chạy local, biến các agent **Claude Code** và **Codex CLI** đang chạy trên máy bạn thành những nhân vật trong một văn phòng 3D, xoay và phóng to được.
 
 ![AgentPals](docs/screenshot.png)
 
-> Trạng thái: đang xây dựng. Ý tưởng lấy cảm hứng từ pixel-agents; toàn bộ code và hình ảnh ở đây là tự viết.
+- 4 agent ngồi một hàng ngang ở bàn dài, mỗi chỗ một bộ thiết bị riêng và ghế công thái học.
+- Nhân vật đổi tư thế theo việc agent đang làm: gõ phím khi sửa file hoặc chạy lệnh, chống cằm khi đọc, giơ tay khi cần bạn duyệt.
+- Hết việc thì agent rời bàn ra pantry cầm cốc cà phê.
+- Bên phải là danh sách agent kèm project và việc đang làm.
 
-## Chạy thử
+> Đang xây dựng. Ý tưởng lấy cảm hứng từ pixel-agents; toàn bộ code và hình ảnh ở đây là tự viết.
 
-Yêu cầu: Node 20+, pnpm.
+## Cài đặt
+
+Cần Node 20.19+ và pnpm (`npm i -g pnpm`). Dùng với Codex thì cần Codex CLI ≥ 0.124.
 
 ```bash
+git clone https://github.com/MrQuanggit/agentpals.git
+cd agentpals
 pnpm install
-pnpm install-hooks   # thêm hook vào ~/.claude/settings.json và ~/.codex/hooks.json (có backup)
-pnpm dev             # server :4777 + UI Vite :5173 (hot reload)
+pnpm start
 ```
 
-Mở link `http://127.0.0.1:5173/?token=...` mà server in ra, rồi mở Claude Code hoặc Codex ở một project bất kỳ. Terminal của server sẽ in các event (`→ typing · Edit foo.ts`, `→ waiting`, …) và UI cập nhật danh sách agent.
+Mở link `http://127.0.0.1:4777/?token=...` mà terminal in ra. Token bị xoá khỏi thanh địa chỉ sau khi trang tải, nên mỗi tab mới hãy mở lại bằng link này.
 
-**Codex:** cần Codex CLI ≥ 0.124 (hooks ổn định). Lần đầu mở Codex sau khi cài, gõ `/hooks` để duyệt hook AgentPals. Agent Codex rảnh quá 30 phút sẽ tự rời văn phòng (Codex không có sự kiện kết thúc phiên). Nếu server in dòng `bỏ qua payload: …` thì đó là sự kiện chưa được map, gửi dòng đó vào issue để bổ sung.
+**Xem thử với agent giả** (terminal thứ hai, trong lúc `pnpm start` đang chạy):
 
-Chưa muốn đụng vào agent thật? Trong lúc `pnpm dev` đang chạy, mở terminal khác chạy `pnpm demo` để xem 4 agent giả.
+```bash
+pnpm demo
+```
 
-Dùng hằng ngày (1 tiến trình, 1 port): `pnpm start` sẽ build UI rồi chạy server, mở `http://127.0.0.1:4777/?token=...`.
+**Dùng với agent thật** (chạy một lần):
+
+```bash
+pnpm install-hooks
+```
+
+- Lệnh này thêm hook vào `~/.claude/settings.json` và `~/.codex/hooks.json`, chỉ cho agent nào có trên máy. Hook sẵn có của bạn được giữ nguyên, bản gốc lưu ở `*.agentpals.bak`.
+- Sau đó mở Claude Code hoặc Codex ở project bất kỳ, nhân vật sẽ hiện ra.
+- Codex: lần đầu mở sau khi cài, gõ `/hooks` để duyệt hook mới.
+- Đừng di chuyển thư mục `agentpals` sau khi cài hook. Lỡ di chuyển thì chạy lại `pnpm install-hooks`.
 
 Gỡ hook: `pnpm uninstall-hooks`.
+
+## Các lệnh
+
+| Lệnh | Việc |
+| --- | --- |
+| `pnpm start` | Build UI rồi chạy server ở `127.0.0.1:4777` (1 tiến trình, 1 port) |
+| `pnpm dev` | Chế độ sửa code: server `:4777` + Vite `:5173` có hot reload |
+| `pnpm demo` | Gửi sự kiện của 4 agent giả tới server đang chạy |
+| `pnpm install-hooks` / `pnpm uninstall-hooks` | Cài / gỡ hook cho Claude Code và Codex |
+| `pnpm typecheck` / `pnpm test` | Kiểm tra kiểu / chạy test |
+
+## Ghi chú khi dùng
+
+- Văn phòng có 4 bàn và 4 chỗ ở pantry. Agent thứ 5 trở đi chỉ hiện trong danh sách bên phải, trừ khi đang rảnh và pantry còn chỗ.
+- Agent rảnh quá 30 phút sẽ tự rời văn phòng (Codex không báo khi phiên kết thúc).
+- Kéo chuột để xoay góc nhìn, cuộn để phóng to. Máy không có WebGL sẽ tự dùng bản văn phòng phẳng (SVG).
+- Nếu terminal in `bỏ qua payload: …` thì đó là sự kiện chưa được nhận diện; hãy mở issue kèm dòng đó.
+- Phần Codex viết theo tài liệu hook của Codex và chưa được thử với Codex thật.
 
 ## Cách hoạt động
 
@@ -34,29 +69,32 @@ Claude Code / Codex ──hook (stdin JSON)──> hooks/claude-hook.mjs ──P
                                                                       │  applyEvent → AgentState
                                                               WebSocket /ws
                                                                       ▼
-                                                                React UI
+                                                             React UI (3D)
 ```
 
 - `packages/core` – kiểu `AgentEvent`, `AgentState`, reducer `applyEvent`.
-- `packages/server` – Hono + ws, provider Claude và Codex, cài/gỡ hook, CLI.
-- `packages/ui` – React + Vite; văn phòng 3D bằng three.js / react-three-fiber (tự chuyển về bản SVG phẳng nếu máy không có WebGL). Server phục vụ bản build trên cùng port.
-- `hooks/claude-hook.mjs` – script cả hai agent gọi (`--source codex` cho Codex); luôn exit 0, không bao giờ làm chậm agent.
+- `packages/server` – Hono + ws, provider Claude và Codex, cài/gỡ hook, CLI. Phục vụ luôn UI đã build.
+- `packages/ui` – React + Vite. Văn phòng 3D bằng three.js / react-three-fiber ở `src/components/office3d`; mọi texture vẽ bằng code, không tải ảnh từ mạng.
+- `hooks/claude-hook.mjs` – script cả hai agent gọi; luôn exit 0, không bao giờ làm chậm agent.
 
 ## Bảo mật
 
-- Server chỉ nghe ở `127.0.0.1`, kiểm tra Host/Origin, mọi dữ liệu cần token trong `~/.agentpals/token` (tự tạo, quyền 600).
-- Hook chỉ gửi tên file/lệnh, không gửi nội dung file; bí mật trong lệnh (`API_KEY=…`, `Bearer …`) bị che trước khi hiển thị.
-- Chi tiết mô hình bảo mật và giới hạn: [SECURITY.md](SECURITY.md).
+- Server chỉ nghe ở `127.0.0.1`, kiểm tra Host và Origin. API, hook và WebSocket đều cần token trong `~/.agentpals/token` (tự tạo, quyền 600).
+- Hook chỉ gửi tên file và lệnh, không gửi nội dung file. Bí mật trong lệnh (`API_KEY=…`, `Bearer …`) bị che trước khi hiển thị hoặc ghi log.
+- Trang chỉ gọi ra ngoài một nơi: Google Fonts.
+- Mô hình bảo mật, các biện pháp và giới hạn: [SECURITY.md](SECURITY.md).
 
 ## Lộ trình
 
 1. ✅ Khung monorepo, CI
-2. ✅ Hook Claude Code → server → console
-3. ✅ WebSocket → UI danh sách agent
-4. ✅ Văn phòng isometric SVG: 4 bàn 2 màn hình, pantry cho agent rảnh, nhân vật nhiều kiểu tóc/phụ kiện, bong bóng thoại
-5. ✅ Provider Codex (qua Codex hooks)
-6. ⬜ Màn tuỳ chỉnh nhân vật, lưu `~/.agentpals/config.yaml`
-7. ⬜ README có GIF demo
+2. ✅ Hook Claude Code → server
+3. ✅ WebSocket → danh sách agent
+4. ✅ Provider Codex (qua Codex hooks)
+5. ✅ Rà soát và gia cố bảo mật
+6. ✅ Văn phòng 3D: hàng bàn 4 chỗ, ghế công thái học, pantry, góc họp
+7. ⬜ Tuỳ chỉnh nhân vật (tên, ngoại hình, câu nói), lưu `~/.agentpals/config.yaml`
+8. ⬜ Thử và chỉnh với Codex thật
+9. ⬜ GIF demo
 
 ## License
 
