@@ -6,7 +6,7 @@
 
 - 4 agent ngồi một hàng ngang ở bàn dài, mỗi chỗ một bộ thiết bị riêng và ghế công thái học.
 - Nhân vật đổi tư thế theo việc agent đang làm: gõ phím khi sửa file hoặc chạy lệnh, chống cằm khi đọc, giơ tay khi cần bạn duyệt.
-- Hết việc thì agent rời bàn ra pantry cầm cốc cà phê.
+- Hết việc thì agent đứng dậy, đi bộ ra pantry và cầm cốc cà phê; có việc mới thì đi về bàn.
 - Bên phải là danh sách agent kèm project và việc đang làm.
 - Mỗi project có nhân vật riêng, tuỳ chỉnh được tên, tóc, phụ kiện, màu sắc và câu nói.
 
@@ -79,6 +79,7 @@ Trường nào bỏ trống sẽ dùng mặc định. Giá trị sai định d�
 
 - Văn phòng có 4 bàn và 4 chỗ ở pantry. Agent thứ 5 trở đi chỉ hiện trong danh sách bên phải, trừ khi đang rảnh và pantry còn chỗ.
 - Agent rảnh quá 30 phút sẽ tự rời văn phòng (Codex không báo khi phiên kết thúc).
+- Nếu hệ điều hành bật "giảm chuyển động", agent chuyển chỗ ngay thay vì đi bộ.
 - Kéo chuột để xoay góc nhìn, cuộn để phóng to. Máy không có WebGL sẽ tự dùng bản văn phòng phẳng (SVG).
 - Nếu terminal in `bỏ qua payload: …` thì đó là sự kiện chưa được nhận diện; hãy mở issue kèm dòng đó.
 - Phần Codex đã được đối chiếu với mã nguồn hook của Codex (tên sự kiện, `tool_name`, cấu trúc `tool_input`, định dạng `hooks.json`), nhưng chưa chạy thử với một phiên Codex thật.

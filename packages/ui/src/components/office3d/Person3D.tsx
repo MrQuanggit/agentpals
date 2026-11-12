@@ -224,13 +224,39 @@ export function SeatedPerson3D({ look, pose }: { look: Look; pose: Exclude<Pose,
   );
 }
 
-/** Standing with a mug, feet at the origin, facing -z. */
-export function StandingPerson3D({ look }: { look: Look }) {
+/** One straight arm hanging from the shoulder; the group pivots there so it can swing. */
+function HangingArm({ side, look, armRef }: { side: 1 | -1; look: Look; armRef?: React.Ref<Group> }) {
+  return (
+    <group ref={armRef} position={[0.25 * side, 1.4, 0]}>
+      <Limb a={[0, 0, 0]} b={[0.03 * side, -0.26, 0.02]} r={0.06} color={look.shirt} />
+      <Limb a={[0.03 * side, -0.26, 0.02]} b={[0.02 * side, -0.48, -0.03]} r={0.052} color={look.shirt} />
+      <Hand at={[0.02 * side, -0.52, -0.03]} skin={look.skin} />
+    </group>
+  );
+}
+
+/**
+ * Upright figure, feet at the origin, facing -z.
+ * Standing still it holds a steaming mug; with `walking` the legs and arms swing.
+ */
+export function StandingPerson3D({ look, walking = false }: { look: Look; walking?: boolean }) {
   const body = useRef<Group>(null);
   const steam = useRef<Group>(null);
+  const legL = useRef<Group>(null);
+  const legR = useRef<Group>(null);
+  const armL = useRef<Group>(null);
+  const armR = useRef<Group>(null);
   useFrame(({ clock }) => {
     const t = clock.elapsedTime;
-    if (body.current) body.current.rotation.z = Math.sin(t * 0.9) * 0.015;
+    const swing = walking ? Math.sin(t * 9) : 0;
+    if (legL.current) legL.current.rotation.x = swing * 0.55;
+    if (legR.current) legR.current.rotation.x = -swing * 0.55;
+    if (armL.current) armL.current.rotation.x = -swing * 0.45;
+    if (armR.current) armR.current.rotation.x = swing * 0.45;
+    if (body.current) {
+      body.current.rotation.z = walking ? 0 : Math.sin(t * 0.9) * 0.015;
+      body.current.position.y = walking ? Math.abs(Math.cos(t * 9)) * 0.025 : 0;
+    }
     if (steam.current) {
       steam.current.position.y = (t * 0.12) % 0.14;
       steam.current.scale.setScalar(1 - ((t * 0.12) % 0.14) * 4);
@@ -239,10 +265,15 @@ export function StandingPerson3D({ look }: { look: Look }) {
   const { shirt, skin, pants } = look;
   return (
     <group ref={body}>
-      {[-1, 1].map((s) => (
-        <Limb key={s} a={[0.085 * s, 0.9, 0]} b={[0.09 * s, 0.12, 0]} r={0.072} color={pants} />
+      {([-1, 1] as const).map((s) => (
+        <group key={s} ref={s < 0 ? legL : legR} position={[0.085 * s, 0.9, 0]}>
+          <Limb a={[0, 0, 0]} b={[0.005 * s, -0.78, 0]} r={0.072} color={pants} />
+          <mesh position={[0.02 * s, -0.855, -0.04]} castShadow>
+            <boxGeometry args={[0.105, 0.08, 0.25]} />
+            <meshStandardMaterial color={look.shoes} roughness={0.6} />
+          </mesh>
+        </group>
       ))}
-      <Shoes y={0.045} z={-0.04} color={look.shoes} />
       <Limb a={[0, 0.98, 0]} b={[0, 1.36, 0]} r={0.175} color={shirt} />
       <Limb a={[-0.17, 1.41, 0]} b={[0.17, 1.41, 0]} r={0.085} color={shirt} />
       <Limb a={[0, 1.46, 0]} b={[0, 1.58, 0]} r={0.05} color={skin} />
@@ -250,26 +281,29 @@ export function StandingPerson3D({ look }: { look: Look }) {
       <group position={[0, 1.69, 0]}>
         <Head look={look} />
       </group>
-      {/* hanging arm */}
-      <Limb a={[-0.25, 1.4, 0]} b={[-0.28, 1.14, 0.02]} r={0.06} color={shirt} />
-      <Limb a={[-0.28, 1.14, 0.02]} b={[-0.27, 0.92, -0.03]} r={0.052} color={shirt} />
-      <Hand at={[-0.27, 0.88, -0.03]} skin={skin} />
-      {/* arm with mug */}
-      <Limb a={[0.25, 1.4, 0]} b={[0.28, 1.15, -0.05]} r={0.06} color={shirt} />
-      <Limb a={[0.28, 1.15, -0.05]} b={[0.15, 1.2, -0.27]} r={0.052} color={shirt} />
-      <Hand at={[0.14, 1.21, -0.3]} skin={skin} />
-      <mesh position={[0.13, 1.27, -0.33]} castShadow>
-        <cylinderGeometry args={[0.042, 0.036, 0.095, 18]} />
-        <meshStandardMaterial color="#FFFFFF" roughness={0.3} />
-      </mesh>
-      <group position={[0.13, 1.34, -0.33]}>
-        <group ref={steam}>
-          <mesh>
-            <sphereGeometry args={[0.022, 10, 8]} />
-            <meshStandardMaterial color="#FFFFFF" transparent opacity={0.45} />
+      <HangingArm side={-1} look={look} armRef={armL} />
+      {walking ? (
+        <HangingArm side={1} look={look} armRef={armR} />
+      ) : (
+        <>
+          {/* arm with mug */}
+          <Limb a={[0.25, 1.4, 0]} b={[0.28, 1.15, -0.05]} r={0.06} color={shirt} />
+          <Limb a={[0.28, 1.15, -0.05]} b={[0.15, 1.2, -0.27]} r={0.052} color={shirt} />
+          <Hand at={[0.14, 1.21, -0.3]} skin={skin} />
+          <mesh position={[0.13, 1.27, -0.33]} castShadow>
+            <cylinderGeometry args={[0.042, 0.036, 0.095, 18]} />
+            <meshStandardMaterial color="#FFFFFF" roughness={0.3} />
           </mesh>
-        </group>
-      </group>
+          <group position={[0.13, 1.34, -0.33]}>
+            <group ref={steam}>
+              <mesh>
+                <sphereGeometry args={[0.022, 10, 8]} />
+                <meshStandardMaterial color="#FFFFFF" transparent opacity={0.45} />
+              </mesh>
+            </group>
+          </group>
+        </>
+      )}
     </group>
   );
 }

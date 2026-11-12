@@ -6,7 +6,8 @@ import type { AgentState } from '@agentpals/core';
 import { useCharacters } from '@/lib/characters';
 import { STATUS, characterOf, displayLine, displayName, resolveLook, truncate } from '@/lib/look';
 import { Room, RowDesk, SEAT_GAP, Workstation } from './office3d/Furniture';
-import { SeatedPerson3D, StandingPerson3D } from './office3d/Person3D';
+import { AgentFigure, type PositionMap } from './office3d/AgentFigure';
+import { assignSpots, type P, type Spot } from './office3d/route';
 
 type V3 = [number, number, number];
 
@@ -16,33 +17,31 @@ const ROW: V3 = [-2.2, 0, -2.4];
 /** Seat x offsets from the row centre. Agent i owns seat i. */
 const SEATS = [-1.5, -0.5, 0.5, 1.5].map((k) => k * SEAT_GAP);
 
-/** Where idle agents stand in the pantry (world position, rotation around y). */
-const PANTRY_SPOTS: Array<{ at: V3; rot: number }> = [
-  { at: [4.3, 0, 0.55], rot: Math.PI + 0.95 },
-  { at: [5.85, 0, 0.1], rot: Math.PI - 0.85 },
-  { at: [3.95, 0, -3.3], rot: Math.PI + 0.35 },
-  { at: [5.3, 0, -3.25], rot: Math.PI - 0.3 },
+/** Where idle agents stand in the pantry. `via` steers the walk around the standing table. */
+const PANTRY_SPOTS: Spot[] = [
+  { at: [4.3, 0.55], rot: Math.PI + 0.95 },
+  { at: [5.85, 0.1], rot: Math.PI - 0.85, via: [[4.9, -0.8]] },
+  { at: [3.95, -3.3], rot: Math.PI + 0.35 },
+  { at: [5.3, -3.25], rot: Math.PI - 0.3 },
 ];
-
-
-interface Anchor {
-  agent: AgentState;
-  /** World point the label sits on (just above the head). */
-  at: V3;
-}
 
 type LabelMap = Map<string, HTMLDivElement>;
 
 /** Runs inside the canvas: projects each anchor to screen space and moves its DOM label there. */
-function LabelProjector({ anchors, labels }: { anchors: Anchor[]; labels: RefObject<LabelMap> }) {
+function LabelProjector({ ids, positions, labels }: { ids: string[]; positions: RefObject<PositionMap>; labels: RefObject<LabelMap> }) {
   const { camera, size } = useThree();
   const v = useMemo(() => new Vector3(), []);
   useFrame(() => {
     const items: Array<{ el: HTMLDivElement; x: number; y: number; y0: number; w: number; h: number }> = [];
-    for (const a of anchors) {
-      const el = labels.current.get(a.agent.agentId);
+    for (const id of ids) {
+      const el = labels.current.get(id);
+      const at = positions.current.get(id);
       if (!el) continue;
-      v.set(...a.at).project(camera);
+      if (!at) {
+        el.style.visibility = 'hidden';
+        continue;
+      }
+      v.set(...at).project(camera);
       if (v.z >= 1) {
         el.style.visibility = 'hidden';
         continue;
@@ -97,21 +96,32 @@ function Label({ agent }: { agent: AgentState }) {
 export default function Office3D({ agents }: { agents: AgentState[] }) {
   // Looks are resolved here, outside the canvas, so the 3D tree needs no React context.
   const chars = useCharacters();
-  const idle = agents
-    .map((agent, i) => ({ agent, i }))
-    .filter(({ agent }) => STATUS[agent.status].pose === 'idle')
-    .slice(0, PANTRY_SPOTS.length);
-
+  const positions = useRef<PositionMap>(new Map());
   const labels = useRef<LabelMap>(new Map());
-  const anchors: Anchor[] = [];
-  SEATS.forEach((x, i) => {
-    const agent = agents[i];
-    if (agent && STATUS[agent.status].pose !== 'idle') anchors.push({ agent, at: [ROW[0] + x, 1.78, ROW[2] + 1.25] });
+
+  // Idle agents keep their pantry spot until they go back to work.
+  const spotOf = useRef(new Map<string, number>());
+  spotOf.current = assignSpots(
+    spotOf.current,
+    agents.filter((a) => STATUS[a.status].pose === 'idle').map((a) => a.agentId),
+    PANTRY_SPOTS.length,
+  );
+
+  const figures = agents.map((agent, i) => {
+    const meta = STATUS[agent.status];
+    const seatX = SEATS[i];
+    const home: P | null = seatX === undefined ? null : [ROW[0] + seatX, ROW[2] + 1.25];
+    const k = spotOf.current.get(agent.agentId);
+    return {
+      agent,
+      look: resolveLook(agent, i, chars),
+      home,
+      pose: meta.pose === 'idle' ? null : meta.pose,
+      spot: k === undefined ? null : PANTRY_SPOTS[k]!,
+    };
   });
-  idle.forEach(({ agent }, k) => {
-    const spot = PANTRY_SPOTS[k]!;
-    anchors.push({ agent, at: [spot.at[0], 1.98, spot.at[2]] });
-  });
+  // Agents that are somewhere in the room (at a desk, in the pantry, or walking between them).
+  const visible = figures.filter((f) => f.home || f.spot);
 
   return (
     <div className="office3d" role="img" aria-label="Văn phòng 3D của các agent">
@@ -144,23 +154,16 @@ export default function Office3D({ agents }: { agents: AgentState[] }) {
             const meta = agent ? STATUS[agent.status] : null;
             const pose = meta && meta.pose !== 'idle' ? meta.pose : null;
             return (
-              <Workstation key={i} x={x} flip={false} variant={i} pose={pose} accent={meta?.screen ?? '#2F6FD6'}>
-                {agent && pose && <SeatedPerson3D look={resolveLook(agent, i, chars)} pose={pose} />}
-              </Workstation>
+              <Workstation key={i} x={x} flip={false} variant={i} pose={pose} accent={meta?.screen ?? '#2F6FD6'} />
             );
           })}
         </group>
 
-        {idle.map(({ agent, i }, k) => {
-          const spot = PANTRY_SPOTS[k]!;
-          return (
-            <group key={agent.agentId} position={spot.at} rotation={[0, spot.rot, 0]}>
-              <StandingPerson3D look={resolveLook(agent, i, chars)} />
-            </group>
-          );
-        })}
+        {visible.map((f) => (
+          <AgentFigure key={f.agent.agentId} id={f.agent.agentId} look={f.look} home={f.home} pose={f.pose} spot={f.spot} positions={positions} />
+        ))}
 
-        <LabelProjector anchors={anchors} labels={labels} />
+        <LabelProjector ids={visible.map((f) => f.agent.agentId)} positions={positions} labels={labels} />
         <OrbitControls
           target={[0.2, 0.5, -0.8]}
           enablePan={false}
@@ -172,7 +175,7 @@ export default function Office3D({ agents }: { agents: AgentState[] }) {
           maxAzimuthAngle={1.2}
         />
       </Canvas>
-      {anchors.map(({ agent }) => (
+      {visible.map(({ agent }) => (
         <div
           key={agent.agentId}
           className="b3d-wrap"
