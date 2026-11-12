@@ -1,8 +1,8 @@
-import type { AgentSource, AgentState, AgentStatus } from '@agentpals/core';
+import { characterKey, type Accessory, type AgentSource, type AgentState, type AgentStatus, type Character, type CharacterMap, type HairStyle, type LinePose } from '@agentpals/core';
+
+export type { Accessory, HairStyle };
 
 /** How a character looks. Later this comes from ~/.agentpals/config.yaml. */
-export type HairStyle = 'short' | 'long' | 'bun' | 'curly';
-export type Accessory = 'none' | 'headphones' | 'glasses';
 
 export interface Look {
   hair: string;
@@ -44,4 +44,38 @@ export function agentName(a: AgentState): string {
 
 export function truncate(s: string, n: number): string {
   return s.length > n ? `${s.slice(0, n - 1)}…` : s;
+}
+
+/** The user's customization for this agent's project, if any. */
+export function characterOf(agent: AgentState | undefined, characters: CharacterMap): Character | undefined {
+  return agent ? characters[characterKey(agent)] : undefined;
+}
+
+/** Default look for the seat, with the user's choices on top. */
+export function resolveLook(agent: AgentState | undefined, index: number, characters: CharacterMap): Look {
+  const base = DEFAULT_LOOKS[index % DEFAULT_LOOKS.length]!;
+  const c = characterOf(agent, characters);
+  if (!c) return base;
+  return {
+    ...base,
+    hair: c.hair ?? base.hair,
+    hairStyle: c.hairStyle ?? base.hairStyle,
+    shirt: c.shirt ?? base.shirt,
+    hoodie: c.hoodie ?? base.hoodie,
+    skin: c.skin ?? base.skin,
+    pants: c.pants ?? base.pants,
+    accessory: c.accessory ?? base.accessory,
+  };
+}
+
+export function displayName(agent: AgentState, characters: CharacterMap): string {
+  return characterOf(agent, characters)?.name ?? agentName(agent);
+}
+
+/** What the speech bubble says: the user's line for this state (with {detail} filled in), else the raw detail. */
+export function displayLine(agent: AgentState, characters: CharacterMap): string {
+  const meta = STATUS[agent.status];
+  const template = characterOf(agent, characters)?.lines?.[meta.pose as LinePose];
+  if (!template) return agent.detail ?? meta.label;
+  return template.replaceAll('{detail}', agent.detail ?? meta.label);
 }

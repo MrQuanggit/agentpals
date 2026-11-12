@@ -21,6 +21,13 @@ describe('hooks/claude-hook.mjs minimize', () => {
     });
   });
 
+  it('reduces a Codex apply_patch (patch in tool_input.command) to file header lines', () => {
+    const patch = '*** Begin Patch\n*** Update File: .env\n@@\n-DB_PASSWORD=old\n+DB_PASSWORD=hunter2\n*** End Patch';
+    const out = minimize({ hook_event_name: 'PreToolUse', session_id: 's', tool_name: 'apply_patch', tool_input: { command: patch } });
+    expect(out.tool_input).toEqual({ command: '*** Update File: .env' });
+    expect(JSON.stringify(minimize({ hook_event_name: 'PreToolUse', session_id: 's', tool_name: 'Bash', tool_input: { command: `apply_patch <<EOF\n${patch}\nEOF` } }))).not.toContain('hunter2');
+  });
+
   it('caps long strings and ignores non-objects', () => {
     const out = minimize({ hook_event_name: 'PreToolUse', session_id: 's', tool_input: { command: 'x'.repeat(5000) } });
     expect(out.tool_input.command.length).toBe(500);

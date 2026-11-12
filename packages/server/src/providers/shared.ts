@@ -26,7 +26,7 @@ export interface HookPayloadBase {
 // ---------------------------------------------------------------------------
 
 /** C0/C1 control characters (incl. ESC, which starts ANSI terminal sequences) and bidi overrides. */
-const CONTROL = /[\u0000-\u001f\u007f-\u009f‪-‮⁦-⁩]/g;
+const CONTROL = /[\u0000-\u001f\u007f-\u009f\u202a-\u202e\u2066-\u2069]/g;
 
 const SECRET_PATTERNS: Array<[RegExp, string]> = [
   // Specific formats first, so a generic rule cannot hide the label and leave the secret.

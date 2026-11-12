@@ -87,3 +87,39 @@ h1, h2 { margin: 0; }
 .b3d-tag strong { font-size: 12px; font-weight: 600; color: #374151; }
 @keyframes b3dpulse { 50% { box-shadow: 0 0 0 6px rgba(227, 167, 47, 0.28); } }
 @media (prefers-reduced-motion: reduce) { .b3d-waiting { animation: none; } }
+
+/* buttons + customize dialog */
+.btn { height: 40px; padding: 0 16px; border-radius: 10px; border: 1px solid #d5dae3; background: #fff; color: var(--ink); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+.btn:hover { background: #f6f8fb; }
+.btn:disabled { opacity: 0.6; cursor: default; }
+.btn-primary { background: var(--ink); border-color: var(--ink); color: #fff; }
+.btn-primary:hover { background: #2b3346; }
+.btn-quiet { border-color: transparent; background: transparent; color: #1f55b5; }
+.btn:focus-visible, .pills button:focus-visible, .swatches button:focus-visible, .field input:focus-visible, .lines input:focus-visible { outline: 2px solid #2f6fd6; outline-offset: 2px; }
+.agent .edit { height: 44px; padding: 0 10px; font-size: 13px; }
+.modal-backdrop { position: fixed; inset: 0; z-index: 50; background: rgba(28, 34, 48, 0.45); display: grid; place-items: center; padding: 16px; overflow: auto; }
+.modal { width: min(880px, 100%); background: var(--card); border-radius: 16px; box-shadow: 0 24px 60px rgba(28, 34, 48, 0.3); display: flex; flex-wrap: wrap; overflow: hidden; }
+.modal-preview { flex: 1 1 220px; background: #f2efe9; padding: 24px 20px; display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
+.modal-preview svg { width: 100%; max-width: 220px; height: auto; }
+.modal-preview strong { font-size: 18px; }
+.modal-form { flex: 3 1 420px; min-width: 0; padding: 24px; display: flex; flex-direction: column; gap: 16px; }
+.modal-form h2 { font-size: 20px; }
+.field { display: flex; flex-direction: column; gap: 8px; font-size: 13px; font-weight: 600; border: 0; padding: 0; margin: 0; min-width: 0; }
+.field legend { padding: 0; margin-bottom: 8px; }
+.field legend .muted { font-weight: 400; font-size: 12.5px; }
+.field input:not([type]), .lines input { height: 42px; padding: 0 12px; border-radius: 10px; border: 1px solid #c9ced8; font: inherit; font-size: 14px; font-weight: 400; color: var(--ink); min-width: 0; }
+.field-row { display: flex; flex-wrap: wrap; gap: 16px 24px; }
+.pills, .swatches { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.pills button { height: 36px; padding: 0 14px; border-radius: 999px; border: 1px solid #d5dae3; background: #fff; color: var(--ink); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+.pills button[aria-pressed='true'] { background: var(--ink); border-color: var(--ink); color: #fff; }
+.swatches button { width: 32px; height: 32px; border-radius: 999px; border: 3px solid #fff; box-shadow: 0 0 0 1px #c9ced8; cursor: pointer; padding: 0; }
+.swatches button[aria-pressed='true'] { box-shadow: 0 0 0 2px var(--ink); }
+.swatches input[type='color'] { width: 34px; height: 34px; padding: 0; border: 1px solid #c9ced8; border-radius: 8px; background: #fff; cursor: pointer; }
+.check { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.check input { width: 18px; height: 18px; }
+.lines { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
+.lines label { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+.lines input { width: 100%; box-sizing: border-box; }
+.error { margin: 0; color: #a12b1e; font-size: 13.5px; }
+.modal-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.spacer { flex: 1; }

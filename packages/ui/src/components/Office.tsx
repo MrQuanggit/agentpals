@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import type { AgentState } from '@agentpals/core';
-import { DEFAULT_LOOKS, SOURCE_LABEL, STATUS, agentName, truncate } from '@/lib/look';
+import { useCharacters } from '@/lib/characters';
+import { SOURCE_LABEL, STATUS, displayName, resolveLook, truncate } from '@/lib/look';
 import { Desk, DeskDefs } from './office/Desk';
 import { VIEWBOX, iso } from './office/geometry';
 import { SeatedPerson, StandingPerson } from './office/People';
@@ -27,7 +28,6 @@ const TABLE = { p: 610, q: 352 };
 export const SEAT_COUNT = DESKS.length;
 export const PANTRY_COUNT = 4;
 
-const lookFor = (i: number) => DEFAULT_LOOKS[i % DEFAULT_LOOKS.length]!;
 
 /** Agents that are visible somewhere in the office (at a desk, or idle in the pantry). */
 export function placedCount(agents: AgentState[]): number {
@@ -81,6 +81,7 @@ function layoutBubbles(specs: BubbleSpec[]): number[] {
 }
 
 export function Office({ agents }: { agents: AgentState[] }) {
+  const chars = useCharacters();
   const drawables: Drawable[] = [];
   const bubbles: BubbleSpec[] = [];
   const tags: ReactNode[] = [];
@@ -89,7 +90,7 @@ export function Office({ agents }: { agents: AgentState[] }) {
   DESKS.forEach((d, i) => {
     const [x, y] = iso(d.p, d.q);
     const agent = agents[i];
-    const look = lookFor(i);
+    const look = resolveLook(agent, i, chars);
     const meta = agent ? STATUS[agent.status] : null;
     const atDesk = Boolean(agent && meta && meta.pose !== 'idle');
     drawables.push({
@@ -118,7 +119,7 @@ export function Office({ agents }: { agents: AgentState[] }) {
           <g key={`stand${agent.agentId}`} transform={`translate(${sx},${sy})`}>
             <g className="enter">
               <g transform={`scale(${spot.flip ? -0.85 : 0.85},0.85)`}>
-                <StandingPerson look={lookFor(i)} />
+                <StandingPerson look={resolveLook(agent, i, chars)} />
               </g>
             </g>
           </g>
@@ -150,6 +151,7 @@ export function Office({ agents }: { agents: AgentState[] }) {
 }
 
 function Bubble({ agent, ax, ay, dx, compact, by }: BubbleSpec & { by: number }) {
+  const chars = useCharacters();
   const meta = STATUS[agent.status];
   const waiting = meta.pose === 'waiting';
   const w = bubbleWidth(compact);
@@ -167,7 +169,7 @@ function Bubble({ agent, ax, ay, dx, compact, by }: BubbleSpec & { by: number })
         <polygon points={`${tail - 8},-1 ${tail + 8},-1 ${tail},10`} fill={fill} />
         <circle cx={-w / 2 + 19} cy={-23} r={6} fill={meta.screen} />
         <text x={-w / 2 + 33} y={-27} fontSize={13} fontWeight={700} fill="#1C2230">
-          {truncate(`${agentName(agent)} · ${SOURCE_LABEL[agent.source]}`, compact ? 22 : 28)}
+          {truncate(`${displayName(agent, chars)} · ${SOURCE_LABEL[agent.source]}`, compact ? 22 : 28)}
         </text>
         <text x={-w / 2 + 33} y={-10} fontSize={11.5} fill={waiting ? '#6B4300' : '#4B5563'}>
           {line}
@@ -179,7 +181,8 @@ function Bubble({ agent, ax, ay, dx, compact, by }: BubbleSpec & { by: number })
 
 /** Small label under someone taking a break (no speech bubble, so nobody gets covered). */
 function NameTag({ agent, x, y }: { agent: AgentState; x: number; y: number }) {
-  const text = truncate(agentName(agent), 18);
+  const chars = useCharacters();
+  const text = truncate(displayName(agent, chars), 18);
   const w = text.length * 7.4 + 26;
   return (
     <g transform={`translate(${x},${y})`}>

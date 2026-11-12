@@ -2,12 +2,13 @@
 
 Ứng dụng chạy local, biến các agent **Claude Code** và **Codex CLI** đang chạy trên máy bạn thành những nhân vật trong một văn phòng 3D, xoay và phóng to được.
 
-![AgentPals](docs/screenshot.png)
+![AgentPals demo](docs/demo.gif)
 
 - 4 agent ngồi một hàng ngang ở bàn dài, mỗi chỗ một bộ thiết bị riêng và ghế công thái học.
 - Nhân vật đổi tư thế theo việc agent đang làm: gõ phím khi sửa file hoặc chạy lệnh, chống cằm khi đọc, giơ tay khi cần bạn duyệt.
 - Hết việc thì agent rời bàn ra pantry cầm cốc cà phê.
 - Bên phải là danh sách agent kèm project và việc đang làm.
+- Mỗi project có nhân vật riêng, tuỳ chỉnh được tên, tóc, phụ kiện, màu sắc và câu nói.
 
 > Đang xây dựng. Ý tưởng lấy cảm hứng từ pixel-agents; toàn bộ code và hình ảnh ở đây là tự viết.
 
@@ -43,6 +44,27 @@ pnpm install-hooks
 
 Gỡ hook: `pnpm uninstall-hooks`.
 
+## Tuỳ chỉnh nhân vật
+
+Bấm **Sửa** cạnh một agent trong danh sách để đổi tên, kiểu tóc, phụ kiện, màu tóc/áo/da/quần, áo hoodie và câu nói cho từng trạng thái. Trong câu nói, viết `{detail}` để chèn việc agent đang làm, ví dụ `Kai đang sửa {detail}`.
+
+Nhân vật gắn với thư mục project, nên lần sau mở agent ở project đó vẫn giữ nguyên. Cấu hình lưu ở `~/.agentpals/config.yaml`; có thể sửa tay rồi khởi động lại server:
+
+```yaml
+characters:
+  /home/me/code/api-server:
+    name: Kai
+    hair: "#C2417A"
+    hairStyle: curly        # short | long | bun | curly
+    accessory: glasses      # none | headphones | glasses
+    hoodie: true
+    lines:
+      typing: Kai đang sửa {detail}
+      idle: Đi pha cà phê
+```
+
+Trường nào bỏ trống sẽ dùng mặc định. Giá trị sai định dạng bị bỏ qua.
+
 ## Các lệnh
 
 | Lệnh | Việc |
@@ -59,7 +81,7 @@ Gỡ hook: `pnpm uninstall-hooks`.
 - Agent rảnh quá 30 phút sẽ tự rời văn phòng (Codex không báo khi phiên kết thúc).
 - Kéo chuột để xoay góc nhìn, cuộn để phóng to. Máy không có WebGL sẽ tự dùng bản văn phòng phẳng (SVG).
 - Nếu terminal in `bỏ qua payload: …` thì đó là sự kiện chưa được nhận diện; hãy mở issue kèm dòng đó.
-- Phần Codex viết theo tài liệu hook của Codex và chưa được thử với Codex thật.
+- Phần Codex đã được đối chiếu với mã nguồn hook của Codex (tên sự kiện, `tool_name`, cấu trúc `tool_input`, định dạng `hooks.json`), nhưng chưa chạy thử với một phiên Codex thật.
 
 ## Cách hoạt động
 
@@ -73,7 +95,7 @@ Claude Code / Codex ──hook (stdin JSON)──> hooks/claude-hook.mjs ──P
 ```
 
 - `packages/core` – kiểu `AgentEvent`, `AgentState`, reducer `applyEvent`.
-- `packages/server` – Hono + ws, provider Claude và Codex, cài/gỡ hook, CLI. Phục vụ luôn UI đã build.
+- `packages/server` – Hono + ws, provider Claude và Codex, cài/gỡ hook, API nhân vật (`/api/characters`), CLI. Phục vụ luôn UI đã build.
 - `packages/ui` – React + Vite. Văn phòng 3D bằng three.js / react-three-fiber ở `src/components/office3d`; mọi texture vẽ bằng code, không tải ảnh từ mạng.
 - `hooks/claude-hook.mjs` – script cả hai agent gọi; luôn exit 0, không bao giờ làm chậm agent.
 
@@ -92,9 +114,9 @@ Claude Code / Codex ──hook (stdin JSON)──> hooks/claude-hook.mjs ──P
 4. ✅ Provider Codex (qua Codex hooks)
 5. ✅ Rà soát và gia cố bảo mật
 6. ✅ Văn phòng 3D: hàng bàn 4 chỗ, ghế công thái học, pantry, góc họp
-7. ⬜ Tuỳ chỉnh nhân vật (tên, ngoại hình, câu nói), lưu `~/.agentpals/config.yaml`
-8. ⬜ Thử và chỉnh với Codex thật
-9. ⬜ GIF demo
+7. ✅ Tuỳ chỉnh nhân vật (tên, ngoại hình, câu nói), lưu `~/.agentpals/config.yaml`
+8. ✅ Đối chiếu provider Codex với mã nguồn Codex; ⬜ chạy thử với phiên Codex thật
+9. ✅ GIF demo
 
 ## License
 

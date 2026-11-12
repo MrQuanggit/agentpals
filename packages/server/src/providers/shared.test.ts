@@ -23,7 +23,7 @@ describe('redactSecrets', () => {
 
 describe('safeText', () => {
   it('removes terminal escapes, bidi overrides and newlines', () => {
-    expect(safeText('a\u001b[31mb‮c\nd', 50)).toBe('a [31mb c d');
+    expect(safeText('a\u001b[31mb\u202ec\nd', 50)).toBe('a [31mb c d');
   });
 });
 

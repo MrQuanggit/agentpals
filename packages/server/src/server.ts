@@ -6,7 +6,8 @@ import { serveStatic } from '@hono/node-server/serve-static';
 import { Hono, type Context, type Next } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
 import { WebSocket, WebSocketServer } from 'ws';
-import { applyEvent, type AgentEvent, type AgentMap, type ServerMessage } from '@agentpals/core';
+import { MAX_CHARACTERS, applyEvent, isCharacterKey, sanitizeCharacter, type AgentEvent, type AgentMap, type Character, type ServerMessage } from '@agentpals/core';
+import { loadCharacters, saveCharacters } from './characters.ts';
 import { TOKEN_RE } from './config.ts';
 import { mapClaudeHook } from './providers/claude/mapHook.ts';
 import { mapCodexHook } from './providers/codex/mapHook.ts';
@@ -46,6 +47,8 @@ export interface ServerOptions {
   token: string;
   /** Absolute path to the built UI (packages/ui/dist). Served at `/` when given. */
   uiDir?: string;
+  /** YAML file holding the user's character customizations. Kept in memory only when omitted. */
+  configFile?: string;
   log?: boolean;
 }
 
@@ -84,10 +87,12 @@ function sanitizeEvent(ev: AgentEvent): AgentEvent {
   };
 }
 
-export function createAgentPalsServer({ host, port, token, uiDir, log = true }: ServerOptions) {
+export function createAgentPalsServer({ host, port, token, uiDir, configFile, log = true }: ServerOptions) {
   if (!TOKEN_RE.test(token)) throw new Error('AgentPals: refusing to start with an invalid token');
 
   let agents: AgentMap = {};
+  const characters: Map<string, Character> = configFile ? loadCharacters(configFile) : new Map();
+  const characterMap = () => Object.fromEntries(characters);
   const clients = new Set<WebSocket>();
 
   const send = (ws: WebSocket, msg: ServerMessage) => {
@@ -149,6 +154,37 @@ export function createAgentPalsServer({ host, port, token, uiDir, log = true }: 
     return c.json({ ok: true, mapped: Boolean(ev) });
   });
 
+  // Character customization. Small JSON bodies only; every field is validated in sanitizeCharacter.
+  const smallBody = bodyLimit({ maxSize: 8 * 1024, onError: (c) => c.json({ error: 'payload too large' }, 413) });
+  const commitCharacters = (c: Context) => {
+    try {
+      if (configFile) saveCharacters(configFile, characters);
+    } catch (e) {
+      if (log) console.error(`[agentpals] không ghi được cấu hình nhân vật: ${e instanceof Error ? e.message : e}`);
+      return c.json({ error: 'cannot write config' }, 500);
+    }
+    broadcast({ type: 'characters', characters: characterMap() });
+    return c.json({ ok: true });
+  };
+
+  app.get('/api/characters', (c) => c.json(characterMap()));
+
+  app.put('/api/characters', smallBody, async (c) => {
+    const body = (await c.req.json().catch(() => null)) as { key?: unknown; character?: unknown } | null;
+    const character = sanitizeCharacter(body?.character);
+    if (!body || !isCharacterKey(body.key) || !character) return c.json({ error: 'invalid character' }, 400);
+    if (!characters.has(body.key) && characters.size >= MAX_CHARACTERS) return c.json({ error: 'too many characters' }, 409);
+    characters.set(body.key, character);
+    return commitCharacters(c);
+  });
+
+  app.delete('/api/characters', smallBody, async (c) => {
+    const body = (await c.req.json().catch(() => null)) as { key?: unknown } | null;
+    if (!body || !isCharacterKey(body.key)) return c.json({ error: 'invalid key' }, 400);
+    characters.delete(body.key);
+    return commitCharacters(c);
+  });
+
   const pruneTimer = setInterval(() => {
     const now = Date.now();
     for (const a of Object.values(agents)) {
@@ -168,7 +204,7 @@ export function createAgentPalsServer({ host, port, token, uiDir, log = true }: 
   const wss = new WebSocketServer({ noServer: true, maxPayload: 1024 });
   wss.on('connection', (ws) => {
     clients.add(ws);
-    send(ws, { type: 'snapshot', agents: Object.values(agents) });
+    send(ws, { type: 'snapshot', agents: Object.values(agents), characters: characterMap() });
     ws.on('close', () => clients.delete(ws));
     ws.on('error', () => clients.delete(ws));
   });

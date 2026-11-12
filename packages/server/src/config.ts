@@ -8,6 +8,7 @@ export const PORT = Number(process.env.AGENTPALS_PORT ?? 4777);
 
 export const HOME_DIR = process.env.AGENTPALS_HOME ?? join(homedir(), '.agentpals');
 export const TOKEN_FILE = join(HOME_DIR, 'token');
+export const CONFIG_FILE = join(HOME_DIR, 'config.yaml');
 
 /** A valid token is 48 hex chars (24 random bytes). Anything else is regenerated. */
 export const TOKEN_RE = /^[0-9a-f]{48}$/;

@@ -1,5 +1,8 @@
+import { useState } from 'react';
+import { CharactersContext } from '@/lib/characters';
 import { useAgents, type Connection } from '@/lib/useAgents';
-import { DEFAULT_LOOKS, SOURCE_LABEL, STATUS, agentName } from '@/lib/look';
+import { SOURCE_LABEL, STATUS, characterOf, displayLine, displayName, resolveLook } from '@/lib/look';
+import { Customize } from './Customize';
 import { PANTRY_COUNT, SEAT_COUNT, placedCount } from './Office';
 import { OfficeView } from './OfficeView';
 
@@ -11,10 +14,14 @@ const CONN_TEXT: Record<Connection, string> = {
 };
 
 export function Dashboard() {
-  const { agents, conn } = useAgents();
+  const { agents, conn, characters, saveCharacter } = useAgents();
+  const [editingId, setEditingId] = useState<string | null>(null);
   const extra = agents.length - placedCount(agents);
+  const editingIndex = agents.findIndex((a) => a.agentId === editingId);
+  const editing = agents[editingIndex];
 
   return (
+    <CharactersContext.Provider value={characters}>
     <div className="app">
       <header className="top">
         <strong className="logo">AgentPals</strong>
@@ -45,7 +52,7 @@ export function Dashboard() {
           {agents.length === 0 && <p className="muted">Chưa có agent nào. Mở Claude Code ở một project bất kỳ.</p>}
           {agents.map((a, i) => {
             const meta = STATUS[a.status];
-            const look = DEFAULT_LOOKS[i % DEFAULT_LOOKS.length]!;
+            const look = resolveLook(a, i, characters);
             return (
               <div key={a.agentId} className={`agent ${meta.pose === 'waiting' ? 'agent-waiting' : ''}`}>
                 <svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true">
@@ -56,18 +63,32 @@ export function Dashboard() {
                 </svg>
                 <div className="agent-body">
                   <div className="row">
-                    <strong>{agentName(a)}</strong>
+                    <strong>{displayName(a, characters)}</strong>
                     <span className="chip">{SOURCE_LABEL[a.source]}</span>
                     <span className={`pill pill-${meta.pose}`}>{meta.label}</span>
                   </div>
                   {a.cwd && <code className="path">{a.cwd}</code>}
-                  {a.detail && <div className="detail">{a.detail}</div>}
+                  {(a.detail || characterOf(a, characters)?.lines) && <div className="detail">{displayLine(a, characters)}</div>}
                 </div>
+                <button type="button" className="btn btn-quiet edit" onClick={() => setEditingId(a.agentId)} aria-label={`Sửa nhân vật ${displayName(a, characters)}`}>
+                  Sửa
+                </button>
               </div>
             );
           })}
         </aside>
       </main>
+      {editing && (
+        <Customize
+          key={editing.agentId}
+          agent={editing}
+          look={resolveLook(editing, editingIndex, characters)}
+          saved={characterOf(editing, characters)}
+          onSave={saveCharacter}
+          onClose={() => setEditingId(null)}
+        />
+      )}
     </div>
+    </CharactersContext.Provider>
   );
 }

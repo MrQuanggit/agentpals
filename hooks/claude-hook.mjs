@@ -40,7 +40,9 @@ export function minimize(payload) {
   if (input && typeof input === 'object' && !Array.isArray(input)) {
     const ti = {};
     for (const k of INPUT_KEYS) {
-      const v = cap(input[k]);
+      // Codex sends an apply_patch as { command: "<whole patch>" }: keep only its file header lines.
+      const isPatch = typeof input[k] === 'string' && (payload.tool_name === 'apply_patch' || input[k].includes('*** Begin Patch'));
+      const v = isPatch ? patchHeaders(input[k]) : cap(input[k]);
       if (v !== undefined) ti[k] = v;
     }
     for (const k of ['input', 'patch']) {

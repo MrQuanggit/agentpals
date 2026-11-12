@@ -6,5 +6,7 @@
 - Server chỉ bind 127.0.0.1; `/api/*`, `/hook/*` và WebSocket đều cần token (UI tĩnh thì không).
 - Dữ liệu từ hook là không đáng tin: đi qua `normalizePayload` và `safeText` (server) trước khi hiển thị/log; script hook chỉ gửi trường cần thiết. Xem SECURITY.md trước khi đụng tới server, hook hoặc installer.
 - Văn phòng 3D ở `packages/ui/src/components/office3d` (react-three-fiber). Texture vẽ bằng canvas trong code, không tải ảnh/font/HDR từ mạng (CSP chặn). `Office.tsx` (SVG) là bản dự phòng khi không có WebGL.
+- Nhân vật tuỳ chỉnh: kiểu `Character` và `sanitizeCharacter` ở `packages/core` (dùng chung cho API và file YAML); UI lấy qua `CharactersContext`, tra theo `characterKey(agent)` = thư mục project.
+- Không viết ký tự điều khiển/bidi thật vào mã nguồn; dùng escape dạng backslash-u trong regex.
 - Trước khi commit: `pnpm typecheck && pnpm test`.
 - Design tham chiếu: https://claude.ai/artifact/Rm5znEVBJSiwSeub4e98K4

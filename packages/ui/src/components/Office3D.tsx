@@ -3,7 +3,8 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { useMemo, useRef, type RefObject } from 'react';
 import { Vector3 } from 'three';
 import type { AgentState } from '@agentpals/core';
-import { DEFAULT_LOOKS, STATUS, agentName, truncate } from '@/lib/look';
+import { useCharacters } from '@/lib/characters';
+import { STATUS, characterOf, displayLine, displayName, resolveLook, truncate } from '@/lib/look';
 import { Room, RowDesk, SEAT_GAP, Workstation } from './office3d/Furniture';
 import { SeatedPerson3D, StandingPerson3D } from './office3d/Person3D';
 
@@ -23,7 +24,6 @@ const PANTRY_SPOTS: Array<{ at: V3; rot: number }> = [
   { at: [5.3, 0, -3.25], rot: Math.PI - 0.3 },
 ];
 
-const lookFor = (i: number) => DEFAULT_LOOKS[i % DEFAULT_LOOKS.length]!;
 
 interface Anchor {
   agent: AgentState;
@@ -78,20 +78,25 @@ function LabelProjector({ anchors, labels }: { anchors: Anchor[]; labels: RefObj
 }
 
 function Label({ agent }: { agent: AgentState }) {
+  const chars = useCharacters();
   const meta = STATUS[agent.status];
   const idle = meta.pose === 'idle';
+  // In the pantry a label is just a name tag, unless the user wrote a line for breaks.
+  const showLine = !idle || Boolean(characterOf(agent, chars)?.lines?.idle);
   return (
-    <div className={`b3d ${meta.pose === 'waiting' ? 'b3d-waiting' : ''} ${idle ? 'b3d-tag' : ''}`}>
+    <div className={`b3d ${meta.pose === 'waiting' ? 'b3d-waiting' : ''} ${showLine ? '' : 'b3d-tag'}`}>
       <i style={{ background: idle ? (agent.source === 'codex' ? '#1C2230' : '#D97757') : meta.screen }} />
       <div>
-        <strong>{truncate(agentName(agent), 18)}</strong>
-        {!idle && <span>{truncate(agent.detail ?? meta.label, 20)}</span>}
+        <strong>{truncate(displayName(agent, chars), 18)}</strong>
+        {showLine && <span>{truncate(displayLine(agent, chars), 24)}</span>}
       </div>
     </div>
   );
 }
 
 export default function Office3D({ agents }: { agents: AgentState[] }) {
+  // Looks are resolved here, outside the canvas, so the 3D tree needs no React context.
+  const chars = useCharacters();
   const idle = agents
     .map((agent, i) => ({ agent, i }))
     .filter(({ agent }) => STATUS[agent.status].pose === 'idle')
@@ -140,7 +145,7 @@ export default function Office3D({ agents }: { agents: AgentState[] }) {
             const pose = meta && meta.pose !== 'idle' ? meta.pose : null;
             return (
               <Workstation key={i} x={x} flip={false} variant={i} pose={pose} accent={meta?.screen ?? '#2F6FD6'}>
-                {agent && pose && <SeatedPerson3D look={lookFor(i)} pose={pose} />}
+                {agent && pose && <SeatedPerson3D look={resolveLook(agent, i, chars)} pose={pose} />}
               </Workstation>
             );
           })}
@@ -150,7 +155,7 @@ export default function Office3D({ agents }: { agents: AgentState[] }) {
           const spot = PANTRY_SPOTS[k]!;
           return (
             <group key={agent.agentId} position={spot.at} rotation={[0, spot.rot, 0]}>
-              <StandingPerson3D look={lookFor(i)} />
+              <StandingPerson3D look={resolveLook(agent, i, chars)} />
             </group>
           );
         })}

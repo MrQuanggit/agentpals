@@ -2,7 +2,7 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { HOST, PORT, getOrCreateToken } from './config.ts';
+import { CONFIG_FILE, HOST, PORT, getOrCreateToken } from './config.ts';
 import { installHooks, uninstallHooks } from './hooksInstaller.ts';
 import { runDemo } from './demo.ts';
 import { createAgentPalsServer } from './server.ts';
@@ -18,7 +18,7 @@ switch (cmd) {
     if (uiDir && !existsSync(join(uiDir, 'index.html'))) {
       console.warn('Chưa build UI. Chạy `pnpm build` trước, hoặc dùng `pnpm dev`.');
     }
-    createAgentPalsServer({ host: HOST, port: PORT, token, uiDir });
+    createAgentPalsServer({ host: HOST, port: PORT, token, uiDir, configFile: CONFIG_FILE });
     const uiPort = dev ? 5173 : PORT; // dev: Vite dev server; otherwise this server serves packages/ui/dist
     console.log(`AgentPals server: http://${HOST}:${PORT}`);
     console.log(`Mở UI: http://${HOST}:${uiPort}/?token=${token}`);

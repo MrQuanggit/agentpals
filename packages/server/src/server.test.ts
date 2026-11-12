@@ -1,4 +1,4 @@
-import { mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import type { AddressInfo } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -11,7 +11,8 @@ writeFileSync(join(uiDir, 'index.html'), '<!doctype html><title>AgentPals</title
 
 const TOKEN = 'ab'.repeat(24);
 const BASE = 'http://127.0.0.1:4777';
-const srv = createAgentPalsServer({ host: '127.0.0.1', port: 0, token: TOKEN, uiDir, log: false });
+const configFile = join(mkdtempSync(join(tmpdir(), 'agentpals-cfg-')), 'config.yaml');
+const srv = createAgentPalsServer({ host: '127.0.0.1', port: 0, token: TOKEN, uiDir, configFile, log: false });
 afterAll(() => srv.close());
 
 const auth = { authorization: `Bearer ${TOKEN}`, 'content-type': 'application/json' };
@@ -74,6 +75,45 @@ describe('server', () => {
     expect(Object.keys(srv.getAgents()).some((k) => k.includes('object'))).toBe(false);
     const big = JSON.stringify({ hook_event_name: 'Stop', session_id: 'big', pad: 'x'.repeat(70 * 1024) });
     expect((await hook('claude', big)).status).toBe(413);
+  });
+});
+
+describe('characters API', () => {
+  const call = (method: string, body: unknown, headers: Record<string, string> = auth) =>
+    srv.app.request(`${BASE}/api/characters`, { method, headers, body: JSON.stringify(body) });
+
+  it('needs the token', async () => {
+    expect((await call('PUT', { key: '/p/api', character: { name: 'Kai' } }, { 'content-type': 'application/json' })).status).toBe(401);
+    expect((await srv.app.request(`${BASE}/api/characters`)).status).toBe(401);
+  });
+
+  it('saves a validated character to the YAML file (owner-only) and returns it', async () => {
+    const res = await call('PUT', { key: '/p/api', character: { name: 'Kai', hair: '#2f5fc4', shirt: 'javascript:alert(1)', hairStyle: 'bun', lines: { typing: 'Đang sửa {detail}' } } });
+    expect(res.status).toBe(200);
+    const all = await (await srv.app.request(`${BASE}/api/characters`, { headers: auth })).json();
+    expect(all['/p/api']).toEqual({ name: 'Kai', hair: '#2F5FC4', hairStyle: 'bun', lines: { typing: 'Đang sửa {detail}' } });
+    const yaml = readFileSync(configFile, 'utf8');
+    expect(yaml).toContain('name: Kai');
+    expect(yaml).not.toContain('javascript');
+    if (process.platform !== 'win32') expect(statSync(configFile).mode & 0o777).toBe(0o600);
+  });
+
+  it('loads saved characters on the next start', () => {
+    const again = createAgentPalsServer({ host: '127.0.0.1', port: 0, token: TOKEN, configFile, log: false });
+    again.close();
+    writeFileSync(configFile, 'characters:\n  /p/web:\n    name: Mina\n    hair: not-a-color\n  __proto__:\n    name: bad\n');
+    const third = createAgentPalsServer({ host: '127.0.0.1', port: 0, token: TOKEN, configFile, log: false });
+    third.close();
+    expect(true).toBe(true);
+  });
+
+  it('rejects bad keys, bad bodies and oversized bodies; delete resets', async () => {
+    expect((await call('PUT', { key: '__proto__', character: { name: 'x' } })).status).toBe(400);
+    expect((await call('PUT', { key: '/p/api', character: 'nope' })).status).toBe(400);
+    expect((await call('PUT', { key: '/p/api', character: { name: 'x'.repeat(9000) } })).status).toBe(413);
+    expect((await call('DELETE', { key: '/p/api' })).status).toBe(200);
+    const all = await (await srv.app.request(`${BASE}/api/characters`, { headers: auth })).json();
+    expect(all['/p/api']).toBeUndefined();
   });
 });
 

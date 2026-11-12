@@ -21,8 +21,14 @@ AgentPals là ứng dụng chạy **trên máy của bạn**, cho **chính bạn
 - Header bảo mật trên mọi response: CSP chặt (`script-src 'self'`, `frame-ancestors 'none'`, …), `nosniff`, `Referrer-Policy: no-referrer`, `X-Frame-Options: DENY`, COOP/CORP. API trả `Cache-Control: no-store`.
 - Dữ liệu từ hook: kiểm tra kiểu (`normalizePayload`), cắt độ dài, bỏ ký tự điều khiển (chặn chèn mã ANSI vào terminal) và che bí mật (`KEY=…`, `Bearer …`, `user:pass@`, `sk-…`, `ghp_…`, `AKIA…`, JWT, …) **trước khi** đưa lên UI hoặc in log.
 
+**Cấu hình nhân vật (`~/.agentpals/config.yaml`, `/api/characters`)**
+- API cần token như mọi route khác; body tối đa 8 KB; tối đa 200 nhân vật.
+- Dữ liệu từ API và từ file sửa tay đều đi qua `sanitizeCharacter`: màu phải đúng `#RRGGBB`, kiểu tóc/phụ kiện phải nằm trong danh sách, tên ≤ 24 và câu nói ≤ 60 ký tự, bỏ ký tự điều khiển, bỏ mọi trường lạ. Khoá `__proto__`/`constructor`/`prototype` bị từ chối.
+- YAML chỉ được phân tích thành dữ liệu (thư viện `yaml`, không chạy mã, tag lạ bị bỏ). File hỏng thì server chạy với cấu hình rỗng.
+- File ghi nguyên tử, quyền 600.
+
 **Script hook (`hooks/claude-hook.mjs`)**
-- Chỉ gửi các trường cần cho UI. Nội dung file (`Write`/`Edit`), nội dung patch, `transcript_path` **không bao giờ** rời khỏi script; patch chỉ còn dòng tên file.
+- Chỉ gửi các trường cần cho UI. Nội dung file (`Write`/`Edit`), nội dung patch, `transcript_path` **không bao giờ** rời khỏi script; patch chỉ còn dòng tên file (kể cả khi Codex gửi patch trong `tool_input.command`).
 - Token gửi qua header, không qua tham số dòng lệnh. Luôn exit 0, timeout 1 giây, không in ra gì.
 
 **Bộ cài hook**

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { AgentState, ServerMessage } from '@agentpals/core';
+import type { AgentState, Character, CharacterMap, ServerMessage } from '@agentpals/core';
 
 export type Connection = 'connecting' | 'open' | 'closed' | 'no-token';
 
@@ -33,9 +33,10 @@ function takeToken(): string | null {
 export function useAgents() {
   const [agents, setAgents] = useState<Record<string, AgentState>>({});
   const [conn, setConn] = useState<Connection>('connecting');
+  const [characters, setCharacters] = useState<CharacterMap>({});
+  const [token] = useState(takeToken);
 
   useEffect(() => {
-    const token = takeToken();
     if (!token) {
       setConn('no-token');
       return;
@@ -63,12 +64,18 @@ export function useAgents() {
         }
         if (msg.type === 'snapshot') {
           setAgents(Object.fromEntries(msg.agents.map((a) => [a.agentId, a])));
+          setCharacters(msg.characters ?? {});
           return;
         }
+        if (msg.type === 'characters') {
+          setCharacters(msg.characters);
+          return;
+        }
+        const { agent, event } = msg;
         setAgents((prev) => {
           const next = { ...prev };
-          if (msg.agent) next[msg.agent.agentId] = msg.agent;
-          else delete next[msg.event.agentId];
+          if (agent) next[agent.agentId] = agent;
+          else delete next[event.agentId];
           return next;
         });
       };
@@ -80,8 +87,19 @@ export function useAgents() {
       window.clearTimeout(timer);
       ws?.close();
     };
-  }, []);
+  }, [token]);
 
   const list = Object.values(agents).sort((a, b) => a.startedAt - b.startedAt);
-  return { agents: list, conn };
+
+  /** Save (or, with null, reset) the character of a project. The server broadcasts the new map back. */
+  const saveCharacter = async (key: string, character: Character | null): Promise<void> => {
+    const res = await fetch('/api/characters', {
+      method: character ? 'PUT' : 'DELETE',
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${token ?? ''}` },
+      body: JSON.stringify(character ? { key, character } : { key }),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  };
+
+  return { agents: list, conn, characters, saveCharacter };
 }

@@ -10,6 +10,11 @@ describe('mapCodexHook', () => {
     expect(ev).toMatchObject({ agentId: 'codex:sess_1', source: 'codex', status: 'typing', detail: 'Sửa cart.ts +1' });
   });
 
+  it('reads the patch from tool_input.command, as Codex sends it', () => {
+    const ev = mapCodexHook({ ...s, hook_event_name: 'PreToolUse', tool_name: 'apply_patch', tool_input: { command: '*** Update File: app/Models/User.php' } });
+    expect(ev).toMatchObject({ status: 'typing', detail: 'Sửa User.php' });
+  });
+
   it('maps Bash to running and unwraps bash -lc', () => {
     const ev = mapCodexHook({ ...s, hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: ['bash', '-lc', 'npm test'] } });
     expect(ev).toMatchObject({ status: 'running', detail: '$ npm test' });
