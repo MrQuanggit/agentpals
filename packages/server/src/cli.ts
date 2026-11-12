@@ -26,12 +26,22 @@ switch (cmd) {
   }
   case 'install-hooks':
     for (const r of installHooks()) {
-      console.log(r.done ? `✓ ${r.name}: đã cài hook vào ${r.file} (bản cũ lưu ở *.agentpals.bak)` : `- ${r.name}: không thấy cài trên máy, bỏ qua`);
+      if (r.error) {
+        console.error(`✗ ${r.name}: ${r.error}`);
+        process.exitCode = 1;
+        continue;
+      }
+      console.log(r.done ? `✓ ${r.name}: đã cài hook vào ${r.file} (bản gốc lưu ở *.agentpals.bak)` : `- ${r.name}: không thấy cài trên máy, bỏ qua`);
       if (r.done && r.name === 'Codex') console.log('  Lần đầu mở Codex, gõ /hooks để duyệt (trust) hook mới. Cần Codex ≥ 0.124.');
     }
     break;
   case 'uninstall-hooks':
-    for (const r of uninstallHooks()) if (r.done) console.log(`✓ ${r.name}: đã gỡ hook khỏi ${r.file}`);
+    for (const r of uninstallHooks()) {
+      if (r.error) {
+        console.error(`✗ ${r.name}: ${r.error}`);
+        process.exitCode = 1;
+      } else if (r.done) console.log(`✓ ${r.name}: đã gỡ hook khỏi ${r.file}`);
+    }
     break;
   case 'demo':
     await runDemo();

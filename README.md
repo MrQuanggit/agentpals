@@ -44,8 +44,9 @@ Claude Code / Codex ──hook (stdin JSON)──> hooks/claude-hook.mjs ──P
 
 ## Bảo mật
 
-- Server chỉ bind `127.0.0.1`.
-- Mọi request cần token trong `~/.agentpals/token` (tạo tự động, quyền 600). Đừng chia sẻ URL có `?token=`.
+- Server chỉ nghe ở `127.0.0.1`, kiểm tra Host/Origin, mọi dữ liệu cần token trong `~/.agentpals/token` (tự tạo, quyền 600).
+- Hook chỉ gửi tên file/lệnh, không gửi nội dung file; bí mật trong lệnh (`API_KEY=…`, `Bearer …`) bị che trước khi hiển thị.
+- Chi tiết mô hình bảo mật và giới hạn: [SECURITY.md](SECURITY.md).
 
 ## Lộ trình
 
