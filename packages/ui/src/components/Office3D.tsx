@@ -3,21 +3,17 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { useMemo, useRef, type RefObject } from 'react';
 import { Vector3 } from 'three';
 import type { AgentState } from '@agentpals/core';
-import { DEFAULT_LOOKS, SOURCE_LABEL, STATUS, agentName, truncate } from '@/lib/look';
-import { Room, SharedDesk, Workstation } from './office3d/Furniture';
+import { DEFAULT_LOOKS, STATUS, agentName, truncate } from '@/lib/look';
+import { Room, RowDesk, SEAT_GAP, Workstation } from './office3d/Furniture';
 import { SeatedPerson3D, StandingPerson3D } from './office3d/Person3D';
 
 type V3 = [number, number, number];
 
-const DESK: V3 = [-2.5, 0, 0.9];
+/** Middle of the desk row (floor). Everyone sits side by side facing the window, so nobody hides anybody. */
+const ROW: V3 = [-2.2, 0, -2.4];
 
-/** Seats at the shared desk: x offset from the desk centre, and which side. Agent i owns seat i. */
-const SEATS = [
-  { x: -1.4, flip: false },
-  { x: 1.4, flip: false },
-  { x: -1.4, flip: true },
-  { x: 1.4, flip: true },
-] as const;
+/** Seat x offsets from the row centre. Agent i owns seat i. */
+const SEATS = [-1.5, -0.5, 0.5, 1.5].map((k) => k * SEAT_GAP);
 
 /** Where idle agents stand in the pantry (world position, rotation around y). */
 const PANTRY_SPOTS: Array<{ at: V3; rot: number }> = [
@@ -42,7 +38,7 @@ function LabelProjector({ anchors, labels }: { anchors: Anchor[]; labels: RefObj
   const { camera, size } = useThree();
   const v = useMemo(() => new Vector3(), []);
   useFrame(() => {
-    const items: Array<{ el: HTMLDivElement; x: number; y: number; w: number; h: number }> = [];
+    const items: Array<{ el: HTMLDivElement; x: number; y: number; y0: number; w: number; h: number }> = [];
     for (const a of anchors) {
       const el = labels.current.get(a.agent.agentId);
       if (!el) continue;
@@ -54,7 +50,8 @@ function LabelProjector({ anchors, labels }: { anchors: Anchor[]; labels: RefObj
       const w = el.offsetWidth;
       // keep the label inside the canvas
       const x = Math.min(Math.max((v.x * 0.5 + 0.5) * size.width, w / 2 + 6), size.width - w / 2 - 6);
-      items.push({ el, x, y: (-v.y * 0.5 + 0.5) * size.height, w, h: el.offsetHeight });
+      const y = (-v.y * 0.5 + 0.5) * size.height;
+      items.push({ el, x, y, y0: y, w, h: el.offsetHeight });
     }
     // Nearest (lowest on screen) labels keep their spot; labels behind them move up until they are clear.
     items.sort((p, q) => q.y - p.y);
@@ -72,6 +69,9 @@ function LabelProjector({ anchors, labels }: { anchors: Anchor[]; labels: RefObj
       placed.push(it);
       it.el.style.transform = `translate(${it.x.toFixed(1)}px, ${it.y.toFixed(1)}px) translate(-50%, -100%)`;
       it.el.style.visibility = 'visible';
+      // a lifted label keeps a thin stem down to its agent
+      const stem = it.el.lastElementChild as HTMLElement | null;
+      if (stem) stem.style.height = `${Math.max(0, it.y0 - it.y).toFixed(1)}px`;
     }
   });
   return null;
@@ -84,8 +84,8 @@ function Label({ agent }: { agent: AgentState }) {
     <div className={`b3d ${meta.pose === 'waiting' ? 'b3d-waiting' : ''} ${idle ? 'b3d-tag' : ''}`}>
       <i style={{ background: idle ? (agent.source === 'codex' ? '#1C2230' : '#D97757') : meta.screen }} />
       <div>
-        <strong>{truncate(idle ? agentName(agent) : `${agentName(agent)} · ${SOURCE_LABEL[agent.source]}`, 26)}</strong>
-        {!idle && <span>{truncate(agent.detail ?? meta.label, 30)}</span>}
+        <strong>{truncate(agentName(agent), 18)}</strong>
+        {!idle && <span>{truncate(agent.detail ?? meta.label, 20)}</span>}
       </div>
     </div>
   );
@@ -99,9 +99,9 @@ export default function Office3D({ agents }: { agents: AgentState[] }) {
 
   const labels = useRef<LabelMap>(new Map());
   const anchors: Anchor[] = [];
-  SEATS.forEach((seat, i) => {
+  SEATS.forEach((x, i) => {
     const agent = agents[i];
-    if (agent && STATUS[agent.status].pose !== 'idle') anchors.push({ agent, at: [DESK[0] + seat.x, 1.72, DESK[2] + (seat.flip ? -1.25 : 1.25)] });
+    if (agent && STATUS[agent.status].pose !== 'idle') anchors.push({ agent, at: [ROW[0] + x, 1.78, ROW[2] + 1.25] });
   });
   idle.forEach(({ agent }, k) => {
     const spot = PANTRY_SPOTS[k]!;
@@ -110,7 +110,7 @@ export default function Office3D({ agents }: { agents: AgentState[] }) {
 
   return (
     <div className="office3d" role="img" aria-label="Văn phòng 3D của các agent">
-      <Canvas shadows dpr={[1, 2]} camera={{ position: [5.6, 8.3, 13.4], fov: 30 }} gl={{ antialias: true }}>
+      <Canvas shadows dpr={[1, 2]} camera={{ position: [4.4, 8.4, 13.2], fov: 30 }} gl={{ antialias: true }}>
         <color attach="background" args={['#ECE8E1']} />
         <ambientLight intensity={0.75} />
         <hemisphereLight args={['#FFF4E3', '#7A6A58', 0.7]} />
@@ -130,16 +130,16 @@ export default function Office3D({ agents }: { agents: AgentState[] }) {
           shadow-camera-bottom={-8}
         />
 
-        <Room desk={DESK} />
+        <Room />
 
-        <group position={DESK}>
-          <SharedDesk />
-          {SEATS.map((seat, i) => {
+        <group position={ROW}>
+          <RowDesk />
+          {SEATS.map((x, i) => {
             const agent = agents[i];
             const meta = agent ? STATUS[agent.status] : null;
             const pose = meta && meta.pose !== 'idle' ? meta.pose : null;
             return (
-              <Workstation key={i} x={seat.x} flip={seat.flip} variant={i} pose={pose} accent={meta?.screen ?? '#2F6FD6'}>
+              <Workstation key={i} x={x} flip={false} variant={i} pose={pose} accent={meta?.screen ?? '#2F6FD6'}>
                 {agent && pose && <SeatedPerson3D look={lookFor(i)} pose={pose} />}
               </Workstation>
             );
@@ -157,7 +157,7 @@ export default function Office3D({ agents }: { agents: AgentState[] }) {
 
         <LabelProjector anchors={anchors} labels={labels} />
         <OrbitControls
-          target={[0.55, 0.6, -0.9]}
+          target={[0.2, 0.5, -0.8]}
           enablePan={false}
           minDistance={8}
           maxDistance={24}
@@ -177,6 +177,7 @@ export default function Office3D({ agents }: { agents: AgentState[] }) {
           }}
         >
           <Label agent={agent} />
+          <div className="b3d-stem" />
         </div>
       ))}
     </div>

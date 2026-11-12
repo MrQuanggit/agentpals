@@ -74,8 +74,9 @@ h1, h2 { margin: 0; }
 .office3d:active { cursor: grabbing; }
 .office3d-loading { display: grid; place-items: center; color: var(--muted); font-size: 14px; cursor: default; }
 .hint { margin: 8px 0 0; font-size: 12.5px; }
-.b3d { display: flex; align-items: center; gap: 8px; padding: 6px 12px 6px 10px; border-radius: 12px; background: rgba(255, 255, 255, 0.96); border: 1.5px solid #d5dae3; box-shadow: 0 4px 14px rgba(28, 34, 48, 0.18); white-space: nowrap; font-family: 'Be Vietnam Pro', system-ui, sans-serif; margin-bottom: 6px; }
-.b3d-wrap { position: absolute; left: 0; top: 0; pointer-events: none; visibility: hidden; will-change: transform; }
+.b3d { display: flex; align-items: center; gap: 8px; padding: 6px 12px 6px 10px; border-radius: 12px; background: rgba(255, 255, 255, 0.96); border: 1.5px solid #d5dae3; box-shadow: 0 4px 14px rgba(28, 34, 48, 0.18); white-space: nowrap; font-family: 'Be Vietnam Pro', system-ui, sans-serif; }
+.b3d-stem { position: absolute; left: 50%; top: 100%; width: 2px; margin-left: -1px; height: 0; background: rgba(28, 34, 48, 0.45); border-radius: 1px; }
+.b3d-wrap { position: absolute; left: 0; top: 0; padding-bottom: 6px; pointer-events: none; visibility: hidden; will-change: transform; }
 .b3d i { width: 11px; height: 11px; border-radius: 999px; flex-shrink: 0; }
 .b3d div { display: flex; flex-direction: column; line-height: 1.25; }
 .b3d strong { font-size: 13px; color: #1c2230; }

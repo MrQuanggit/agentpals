@@ -231,73 +231,165 @@ export function Workstation({ x, flip, variant, pose, accent, children }: { x: n
   );
 }
 
-const FELT = ['#8FA58B', '#C98263'];
+const FELT = ['#8FA58B', '#C98263', '#D9B25A', '#7C8FA8'];
 
-/** The shared four-seat bench: wood top, white central spine with planters and felt screens, loop legs. */
-export function SharedDesk() {
+/** Seat spacing along the row, in metres. */
+export const SEAT_GAP = 2.2;
+
+/**
+ * One long bench for four, everyone side by side facing the window.
+ * Origin: middle of the row on the floor. Shares the Workstation frame: back edge near z = 0, sitters at z = +1.25.
+ */
+export function RowDesk() {
   const wood = woodTexture();
   const white = '#F1EEE8';
+  const len = SEAT_GAP * 4;
+  const seats = [-1.5, -0.5, 0.5, 1.5].map((k) => k * SEAT_GAP);
   return (
     <group>
-      <RoundedBox args={[5.5, 0.05, 1.95]} radius={0.02} smoothness={3} position={[0, 0.755, 0]} castShadow receiveShadow>
+      <RoundedBox args={[len, 0.05, 0.94]} radius={0.02} smoothness={3} position={[0, 0.755, 0.53]} castShadow receiveShadow>
         <meshStandardMaterial map={wood} roughness={0.5} />
       </RoundedBox>
-      <Box at={[0, 0.715, 0]} size={[5.3, 0.03, 1.8]} color={white} rough={0.5} />
-      {/* loop legs at both ends + a cable tray */}
-      {[-2.55, 2.55].map((x) => (
-        <group key={x} position={[x, 0, 0]}>
-          {[-0.8, 0.8].map((z) => (
+      <Box at={[0, 0.715, 0.53]} size={[len - 0.2, 0.03, 0.8]} color={white} rough={0.5} />
+      <Box at={[0, 0.6, 0.2]} size={[len - 0.6, 0.02, 0.22]} color="#C9CCD1" rough={0.4} metal={0.5} />
+      {/* loop legs at both ends */}
+      {[-len / 2 + 0.08, len / 2 - 0.08].map((x) => (
+        <group key={x} position={[x, 0, 0.53]}>
+          {[-0.38, 0.38].map((z) => (
             <RoundedBox key={z} args={[0.07, 0.7, 0.07]} radius={0.02} position={[0, 0.35, z]} castShadow>
               <meshStandardMaterial color={white} roughness={0.4} />
             </RoundedBox>
           ))}
-          <RoundedBox args={[0.07, 0.05, 1.67]} radius={0.02} position={[0, 0.025, 0]} castShadow>
+          <RoundedBox args={[0.07, 0.05, 0.83]} radius={0.02} position={[0, 0.025, 0]} castShadow>
             <meshStandardMaterial color={white} roughness={0.4} />
           </RoundedBox>
         </group>
       ))}
-      <Box at={[0, 0.6, 0]} size={[4.9, 0.02, 0.3]} color="#C9CCD1" rough={0.4} metal={0.5} />
-      {/* drawer pedestals in two finishes + PC towers */}
-      {[-1, 1].map((s) => (
-        <group key={s} position={[0, 0, 0.55 * s]}>
+      {/* drawer pedestals between neighbours (alternating finishes), with a PC tower beside each */}
+      {[-1, 0, 1].map((k) => (
+        <group key={k} position={[k * SEAT_GAP, 0, 0.5]}>
           <RoundedBox args={[0.46, 0.64, 0.6]} radius={0.02} position={[0, 0.36, 0]} castShadow receiveShadow>
-            <meshStandardMaterial color={s > 0 ? white : WALNUT} roughness={0.6} />
+            <meshStandardMaterial color={k === 0 ? WALNUT : white} roughness={0.6} />
           </RoundedBox>
           {[0.56, 0.38, 0.2].map((y) => (
-            <Box key={y} at={[0, y, 0.305 * s]} size={[0.14, 0.018, 0.012]} color={s > 0 ? '#B98A57' : '#E9E2D4'} shadow={false} />
+            <Box key={y} at={[0, y, 0.305]} size={[0.14, 0.018, 0.012]} color={k === 0 ? '#E9E2D4' : '#B98A57'} shadow={false} />
           ))}
-          {[-0.44, 0.44].map((x) => (
+          {[-0.42, 0.42].map((x) => (
             <group key={x}>
-              <RoundedBox args={[0.2, 0.44, 0.45]} radius={0.015} position={[x, 0.24, -0.05 * s]} castShadow>
+              <RoundedBox args={[0.2, 0.44, 0.45]} radius={0.015} position={[x, 0.24, -0.02]} castShadow>
                 <meshStandardMaterial color="#232428" roughness={0.4} />
               </RoundedBox>
-              <Box at={[x, 0.3, (0.18 - 0.05) * s]} size={[0.16, 0.01, 0.006]} color="#7DCFFF" shadow={false} />
+              <Box at={[x, 0.3, 0.21]} size={[0.16, 0.01, 0.006]} color="#7DCFFF" shadow={false} />
             </group>
           ))}
         </group>
       ))}
-      {/* central spine: power channel, planters, felt privacy screens in two colours */}
-      <RoundedBox args={[5.1, 0.07, 0.2]} radius={0.02} position={[0, 0.815, 0]} castShadow receiveShadow>
+      {/* a felt privacy screen per seat, each in its own colour, on a white rail */}
+      <RoundedBox args={[len - 0.1, 0.06, 0.1]} radius={0.02} position={[0, 0.81, 0.12]} castShadow>
         <meshStandardMaterial color={white} roughness={0.45} />
       </RoundedBox>
-      {[-1.4, 1.4].map((x, i) => (
-        <RoundedBox key={x} args={[1.5, 0.36, 0.035]} radius={0.016} position={[x, 1.03, 0]} castShadow>
+      {seats.map((x, i) => (
+        <RoundedBox key={x} args={[SEAT_GAP - 0.5, 0.4, 0.035]} radius={0.016} position={[x, 1.04, 0.12]} castShadow>
           <meshStandardMaterial color={FELT[i]!} roughness={1} />
         </RoundedBox>
       ))}
-      {[-2.4, 0, 2.4].map((x) => (
-        <group key={x} position={[x, 0.85, 0]}>
-          <RoundedBox args={[0.5, 0.14, 0.2]} radius={0.02} position={[0, 0.07, 0]} castShadow>
+      {[-1, 0, 1].map((k) => (
+        <group key={k} position={[k * SEAT_GAP, 0.84, 0.14]}>
+          <RoundedBox args={[0.42, 0.14, 0.18]} radius={0.02} position={[0, 0.07, 0]} castShadow>
             <meshStandardMaterial color={WALNUT} roughness={0.6} />
           </RoundedBox>
-          {[-0.16, -0.05, 0.07, 0.17].map((dx, k) => (
-            <mesh key={dx} position={[dx, 0.2 + (k % 2) * 0.05, (k % 2 ? 0.02 : -0.02)]} castShadow>
-              <icosahedronGeometry args={[0.085 + (k % 2) * 0.02, 1]} />
-              <meshStandardMaterial color={k % 2 ? '#4C9C6B' : '#2F7A4F'} roughness={0.9} flatShading />
+          {[-0.13, -0.03, 0.08, 0.15].map((dx, j) => (
+            <mesh key={dx} position={[dx, 0.2 + (j % 2) * 0.05, j % 2 ? 0.02 : -0.02]} castShadow>
+              <icosahedronGeometry args={[0.08 + (j % 2) * 0.02, 1]} />
+              <meshStandardMaterial color={j % 2 ? '#4C9C6B' : '#2F7A4F'} roughness={0.9} flatShading />
             </mesh>
           ))}
         </group>
       ))}
+      {/* a dome pendant above every seat */}
+      {seats.map((x) => (
+        <group key={x} position={[x, 2.25, 0.75]}>
+          <Box at={[0, 0.6, 0]} size={[0.012, 0.95, 0.012]} color="#201D1B" shadow={false} />
+          <mesh castShadow>
+            <sphereGeometry args={[0.2, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2]} />
+            <meshStandardMaterial color="#B98A3E" roughness={0.35} metalness={0.6} side={DoubleSide} />
+          </mesh>
+          <mesh position={[0, 0.02, 0]}>
+            <sphereGeometry args={[0.07, 14, 10]} />
+            <meshBasicMaterial color="#FFE9C4" toneMapped={false} />
+          </mesh>
+          <pointLight position={[0, -0.15, 0]} color="#FFDFB0" intensity={4} distance={4} decay={2} />
+        </group>
+      ))}
+      {/* rug that ties the work zone together */}
+      <mesh position={[0, 0.007, 1.0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+        <planeGeometry args={[len + 0.7, 3.3]} />
+        <meshStandardMaterial color="#8E9BA8" roughness={1} />
+      </mesh>
+      <mesh position={[0, 0.009, 1.0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+        <planeGeometry args={[len + 0.3, 2.9]} />
+        <meshStandardMaterial color="#A3AFBA" roughness={1} />
+      </mesh>
+    </group>
+  );
+}
+
+function Armchair({ at, rot, color }: { at: V3; rot: number; color: string }) {
+  return (
+    <group position={at} rotation={[0, rot, 0]}>
+      <RoundedBox args={[0.8, 0.3, 0.78]} radius={0.09} smoothness={4} position={[0, 0.3, 0]} castShadow receiveShadow>
+        <meshStandardMaterial color={color} roughness={0.95} />
+      </RoundedBox>
+      <RoundedBox args={[0.8, 0.55, 0.22]} radius={0.09} smoothness={4} position={[0, 0.62, 0.3]} castShadow>
+        <meshStandardMaterial color={color} roughness={0.95} />
+      </RoundedBox>
+      {[-0.34, 0.34].map((x) => (
+        <RoundedBox key={x} args={[0.16, 0.34, 0.7]} radius={0.07} smoothness={4} position={[x, 0.5, 0.02]} castShadow>
+          <meshStandardMaterial color={color} roughness={0.95} />
+        </RoundedBox>
+      ))}
+      {[-0.3, 0.3].map((x) =>
+        [-0.28, 0.28].map((z) => <Box key={`${x}${z}`} at={[x, 0.08, z]} size={[0.05, 0.16, 0.05]} color={WALNUT} />),
+      )}
+    </group>
+  );
+}
+
+/** Small meeting corner: round rug, coffee table, two armchairs and a floor lamp. */
+export function MeetingNook({ at }: { at: V3 }) {
+  return (
+    <group position={at}>
+      <mesh position={[0, 0.008, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+        <circleGeometry args={[1.7, 48]} />
+        <meshStandardMaterial color="#9DB39A" roughness={1} />
+      </mesh>
+      <mesh position={[0, 0.4, 0]} castShadow receiveShadow>
+        <cylinderGeometry args={[0.48, 0.48, 0.04, 36]} />
+        <meshStandardMaterial map={woodTexture()} roughness={0.5} />
+      </mesh>
+      {[0, 1, 2].map((i) => (
+        <Box key={i} at={[Math.cos(i * 2.1) * 0.3, 0.2, Math.sin(i * 2.1) * 0.3]} size={[0.04, 0.4, 0.04]} color={DARK} rot={[0, 0, 0]} />
+      ))}
+      <Box at={[0.1, 0.44, 0.05]} size={[0.26, 0.03, 0.19]} color="#3A4F7A" rot={[0, 0.4, 0]} />
+      <mesh position={[-0.18, 0.47, -0.1]} castShadow>
+        <cylinderGeometry args={[0.04, 0.035, 0.09, 14]} />
+        <meshStandardMaterial color="#FFFFFF" roughness={0.3} />
+      </mesh>
+      <Armchair at={[-1.0, 0, 0.1]} rot={-Math.PI / 2 - 0.2} color="#D9B25A" />
+      <Armchair at={[0.25, 0, 1.05]} rot={0.25} color="#3E5C8A" />
+      {/* floor lamp */}
+      <group position={[-1.1, 0, -1.05]}>
+        <mesh position={[0, 0.015, 0]} castShadow>
+          <cylinderGeometry args={[0.16, 0.17, 0.03, 20]} />
+          <meshStandardMaterial color={DARK} roughness={0.4} />
+        </mesh>
+        <Box at={[0, 0.8, 0]} size={[0.02, 1.6, 0.02]} color={DARK} />
+        <mesh position={[0, 1.65, 0]} castShadow>
+          <cylinderGeometry args={[0.16, 0.22, 0.3, 24, 1, true]} />
+          <meshStandardMaterial color="#F4E9D2" emissive="#FFD9A0" emissiveIntensity={0.6} roughness={0.9} side={DoubleSide} />
+        </mesh>
+        <pointLight position={[0, 1.55, 0]} color="#FFD9A0" intensity={3} distance={4} decay={2} />
+      </group>
     </group>
   );
 }
@@ -488,8 +580,8 @@ function Pantry() {
   );
 }
 
-/** Floor, walls, skyline window, pendant lamp, cabinet and pantry. Desk centre is passed in. */
-export function Room({ desk }: { desk: V3 }) {
+/** Floor, walls, skyline window, cabinet, pantry and the meeting corner. */
+export function Room() {
   return (
     <group>
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
@@ -526,26 +618,11 @@ export function Room({ desk }: { desk: V3 }) {
         ))}
       </group>
 
-      {/* pendant lamp over the desk */}
-      <group position={[desk[0], 2.35, desk[2]]}>
-        <RoundedBox args={[4.3, 0.09, 0.3]} radius={0.03} castShadow>
-          <meshStandardMaterial color="#201D1B" roughness={0.4} />
-        </RoundedBox>
-        <mesh position={[0, -0.05, 0]}>
-          <boxGeometry args={[4.15, 0.02, 0.2]} />
-          <meshBasicMaterial color="#FFE9C4" toneMapped={false} />
-        </mesh>
-        {[-1.8, 1.8].map((x) => (
-          <Box key={x} at={[x, 0.55, 0]} size={[0.012, 1.1, 0.012]} color="#201D1B" shadow={false} />
-        ))}
-        {[-1.4, 1.4].map((x) => (
-          <pointLight key={x} position={[x, -0.3, 0]} color="#FFDFB0" intensity={7} distance={5} decay={2} />
-        ))}
-      </group>
-
       <Cabinet at={[1.55, 0, -4.25]} />
       <Pantry />
-      <Plant at={[-6.3, 0, 3.8]} />
+      <MeetingNook at={[-3.6, 0, 2.5]} />
+      <Plant at={[-6.4, 0, -3.9]} />
+      <Plant at={[-0.3, 0, -4.0]} scale={0.8} />
     </group>
   );
 }
