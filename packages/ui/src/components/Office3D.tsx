@@ -139,7 +139,7 @@ export default function Office3D({ agents }: { agents: AgentState[] }) {
             const meta = agent ? STATUS[agent.status] : null;
             const pose = meta && meta.pose !== 'idle' ? meta.pose : null;
             return (
-              <Workstation key={i} x={seat.x} flip={seat.flip} pose={pose} accent={meta?.screen ?? '#2F6FD6'}>
+              <Workstation key={i} x={seat.x} flip={seat.flip} variant={i} pose={pose} accent={meta?.screen ?? '#2F6FD6'}>
                 {agent && pose && <SeatedPerson3D look={lookFor(i)} pose={pose} />}
               </Workstation>
             );

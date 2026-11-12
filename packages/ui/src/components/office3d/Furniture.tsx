@@ -1,5 +1,6 @@
 import { RoundedBox } from '@react-three/drei';
 import type { ReactNode } from 'react';
+import { DoubleSide } from 'three';
 import type { Pose } from '@/lib/look';
 import { carpetTexture, cityTexture, screenTexture, tileTexture, woodTexture } from './textures';
 
@@ -19,137 +20,281 @@ function Box({ at, size, color, rough = 0.8, metal = 0, shadow = true, rot }: { 
   );
 }
 
-/** Mesh office chair on the floor at the origin; the sitter faces -z. */
-export function Chair() {
+/** A curved panel (slice of a cylinder) whose concave side faces the sitter at -z. */
+function Arc({ r, h, span, y, z, color, opacity = 1, rough = 0.9 }: { r: number; h: number; span: number; y: number; z: number; color: string; opacity?: number; rough?: number }) {
+  return (
+    <mesh position={[0, y, z - r]} castShadow>
+      <cylinderGeometry args={[r, r, h, 20, 1, true, -span / 2, span]} />
+      <meshStandardMaterial color={color} roughness={rough} side={DoubleSide} transparent={opacity < 1} opacity={opacity} />
+    </mesh>
+  );
+}
+
+/** Ergonomic chair: curved mesh back, lumbar pad, headrest, T-arms. On the floor at the origin; the sitter faces -z. */
+export function Chair({ accent = '#E07B39' }: { accent?: string }) {
+  const graphite = '#1F2023';
   return (
     <group>
-      {[0, 1, 2, 3, 4].map((i) => {
-        const a = (i / 5) * Math.PI * 2;
-        return (
-          <group key={i} rotation={[0, a, 0]}>
-            <Box at={[0.15, 0.07, 0]} size={[0.3, 0.03, 0.045]} color={METAL} rough={0.4} metal={0.5} />
-            <mesh position={[0.3, 0.035, 0]} castShadow>
-              <sphereGeometry args={[0.035, 10, 8]} />
-              <meshStandardMaterial color="#1B1B1D" roughness={0.5} />
-            </mesh>
-          </group>
-        );
-      })}
-      <mesh position={[0, 0.27, 0]} castShadow>
-        <cylinderGeometry args={[0.028, 0.035, 0.38, 12]} />
-        <meshStandardMaterial color="#6E6A66" roughness={0.3} metalness={0.7} />
+      {[0, 1, 2, 3, 4].map((i) => (
+        <group key={i} rotation={[0, (i / 5) * Math.PI * 2, 0]}>
+          <Box at={[0.16, 0.075, 0]} size={[0.32, 0.03, 0.05]} color="#C9CCD1" rough={0.25} metal={0.8} rot={[0, 0, -0.08]} />
+          <mesh position={[0.32, 0.035, 0]} castShadow>
+            <sphereGeometry args={[0.036, 10, 8]} />
+            <meshStandardMaterial color={graphite} roughness={0.5} />
+          </mesh>
+        </group>
+      ))}
+      <mesh position={[0, 0.25, 0]} castShadow>
+        <cylinderGeometry args={[0.026, 0.04, 0.32, 12]} />
+        <meshStandardMaterial color="#B8BBC0" roughness={0.2} metalness={0.9} />
       </mesh>
-      <RoundedBox args={[0.5, 0.08, 0.5]} radius={0.035} smoothness={3} position={[0, 0.49, 0]} castShadow receiveShadow>
-        <meshStandardMaterial color="#3B3835" roughness={0.95} />
+      <Box at={[0, 0.42, 0.04]} size={[0.22, 0.05, 0.32]} color={graphite} rough={0.5} />
+      {/* seat with a waterfall front edge */}
+      <RoundedBox args={[0.52, 0.09, 0.5]} radius={0.04} smoothness={4} position={[0, 0.49, 0]} castShadow receiveShadow>
+        <meshStandardMaterial color="#2F3136" roughness={0.95} />
       </RoundedBox>
-      <group position={[0, 0.88, 0.27]} rotation={[0.12, 0, 0]}>
-        <RoundedBox args={[0.47, 0.56, 0.045]} radius={0.02} smoothness={3} castShadow>
-          <meshStandardMaterial color="#4A4541" roughness={1} transparent opacity={0.93} />
-        </RoundedBox>
-        <Box at={[0, -0.36, 0.02]} size={[0.07, 0.3, 0.03]} color={METAL} rough={0.4} metal={0.5} />
-      </group>
+      {/* back: spine, mesh, frame rims, lumbar pad, headrest */}
+      <Box at={[0, 0.74, 0.335]} size={[0.07, 0.62, 0.035]} color={graphite} rough={0.4} rot={[0.05, 0, 0]} />
+      <Arc r={0.42} h={0.6} span={1.25} y={0.93} z={0.3} color="#44474E" opacity={0.86} />
+      <Arc r={0.421} h={0.035} span={1.3} y={1.235} z={0.3} color={graphite} rough={0.4} />
+      <Arc r={0.421} h={0.035} span={1.3} y={0.625} z={0.3} color={graphite} rough={0.4} />
+      <Arc r={0.4} h={0.11} span={0.85} y={0.79} z={0.285} color={accent} rough={0.8} />
+      <Box at={[0, 1.3, 0.33]} size={[0.04, 0.16, 0.03]} color={graphite} rough={0.4} />
+      <Arc r={0.3} h={0.15} span={0.95} y={1.41} z={0.31} color="#2F3136" />
+      {/* T-arms */}
       {[-1, 1].map((s) => (
         <group key={s}>
-          <RoundedBox args={[0.055, 0.03, 0.3]} radius={0.012} position={[0.28 * s, 0.7, 0.04]} castShadow>
-            <meshStandardMaterial color={METAL} roughness={0.5} />
+          <Box at={[0.31 * s, 0.6, 0.06]} size={[0.035, 0.22, 0.05]} color={graphite} rough={0.4} />
+          <RoundedBox args={[0.085, 0.035, 0.28]} radius={0.015} position={[0.31 * s, 0.725, 0]} castShadow>
+            <meshStandardMaterial color="#2F3136" roughness={0.7} />
           </RoundedBox>
-          <Box at={[0.28 * s, 0.6, 0.12]} size={[0.03, 0.2, 0.04]} color={METAL} rough={0.4} metal={0.5} />
         </group>
       ))}
     </group>
   );
 }
 
-function Monitor({ at, yaw, kind, accent }: { at: V3; yaw: number; kind: Parameters<typeof screenTexture>[0]; accent?: string }) {
+type ScreenKind = Parameters<typeof screenTexture>[0];
+
+/** A monitor standing on the desk surface (local y = 0), facing +z. `arm` mounts it on a pole instead of a foot. */
+function Monitor({ at, yaw, kind, accent, w = 0.58, h = 0.36, arm = false }: { at: V3; yaw: number; kind: ScreenKind; accent?: string; w?: number; h?: number; arm?: boolean }) {
+  const cy = (arm ? 0.2 : 0.14) + h / 2;
   return (
     <group position={at} rotation={[0, yaw, 0]}>
-      <mesh position={[0, 0.01, -0.02]} castShadow>
-        <cylinderGeometry args={[0.1, 0.11, 0.015, 20]} />
-        <meshStandardMaterial color="#D9D6D0" roughness={0.3} metalness={0.6} />
-      </mesh>
-      <Box at={[0, 0.1, -0.03]} size={[0.035, 0.2, 0.02]} color="#D9D6D0" rough={0.3} metal={0.6} />
-      <RoundedBox args={[0.58, 0.36, 0.028]} radius={0.012} smoothness={3} position={[0, 0.33, 0]} castShadow>
+      {arm ? (
+        <>
+          <mesh position={[0, cy / 2, -0.09]} castShadow>
+            <cylinderGeometry args={[0.018, 0.018, cy, 10]} />
+            <meshStandardMaterial color="#1F2023" roughness={0.3} metalness={0.7} />
+          </mesh>
+          <Box at={[0, cy, -0.05]} size={[0.05, 0.05, 0.08]} color="#1F2023" rough={0.3} metal={0.7} />
+          <Box at={[0, 0.012, -0.09]} size={[0.09, 0.024, 0.09]} color="#1F2023" rough={0.3} metal={0.7} />
+        </>
+      ) : (
+        <>
+          <mesh position={[0, 0.008, -0.02]} castShadow>
+            <cylinderGeometry args={[0.1, 0.11, 0.015, 20]} />
+            <meshStandardMaterial color="#D9D6D0" roughness={0.3} metalness={0.6} />
+          </mesh>
+          <Box at={[0, 0.09, -0.03]} size={[0.035, 0.18, 0.02]} color="#D9D6D0" rough={0.3} metal={0.6} />
+        </>
+      )}
+      <RoundedBox args={[w, h, 0.028]} radius={0.012} smoothness={3} position={[0, cy, 0]} castShadow>
         <meshStandardMaterial color="#17181B" roughness={0.35} />
       </RoundedBox>
-      <mesh position={[0, 0.335, 0.0155]}>
-        <planeGeometry args={[0.545, 0.325]} />
+      <mesh position={[0, cy, 0.0155]}>
+        <planeGeometry args={[w - 0.035, h - 0.035]} />
         <meshBasicMaterial map={screenTexture(kind, accent)} toneMapped={false} />
       </mesh>
     </group>
   );
 }
 
+/** Laptop on a small stand, on the desk surface, facing +z. */
+function Laptop({ at, yaw, kind, accent }: { at: V3; yaw: number; kind: ScreenKind; accent?: string }) {
+  return (
+    <group position={at} rotation={[0, yaw, 0]}>
+      <Box at={[0, 0.04, -0.04]} size={[0.24, 0.08, 0.03]} color="#C9CCD1" rough={0.3} metal={0.7} />
+      <group position={[0, 0.075, 0]} rotation={[0.16, 0, 0]}>
+        <RoundedBox args={[0.34, 0.014, 0.23]} radius={0.006} castShadow>
+          <meshStandardMaterial color="#C9CCD1" roughness={0.35} metalness={0.6} />
+        </RoundedBox>
+        <group position={[0, 0.007, -0.115]} rotation={[-0.35, 0, 0]}>
+          <RoundedBox args={[0.34, 0.22, 0.01]} radius={0.005} position={[0, 0.11, 0]} castShadow>
+            <meshStandardMaterial color="#C9CCD1" roughness={0.35} metalness={0.6} />
+          </RoundedBox>
+          <mesh position={[0, 0.11, 0.006]}>
+            <planeGeometry args={[0.32, 0.2]} />
+            <meshBasicMaterial map={screenTexture(kind, accent)} toneMapped={false} />
+          </mesh>
+        </group>
+      </group>
+    </group>
+  );
+}
+
+function DeskLamp({ at }: { at: V3 }) {
+  return (
+    <group position={at}>
+      <mesh position={[0, 0.01, 0]} castShadow>
+        <cylinderGeometry args={[0.07, 0.075, 0.02, 18]} />
+        <meshStandardMaterial color="#E3A72F" roughness={0.4} />
+      </mesh>
+      <Box at={[0, 0.17, -0.03]} size={[0.014, 0.32, 0.014]} color="#E3A72F" rough={0.4} rot={[-0.2, 0, 0]} />
+      <Box at={[0, 0.36, 0.03]} size={[0.014, 0.26, 0.014]} color="#E3A72F" rough={0.4} rot={[0.9, 0, 0]} />
+      <mesh position={[0, 0.42, 0.14]} rotation={[0.5, 0, 0]} castShadow>
+        <coneGeometry args={[0.065, 0.1, 18, 1, true]} />
+        <meshStandardMaterial color="#E3A72F" roughness={0.4} side={DoubleSide} />
+      </mesh>
+      <mesh position={[0, 0.4, 0.15]}>
+        <sphereGeometry args={[0.022, 10, 8]} />
+        <meshBasicMaterial color="#FFE9C4" toneMapped={false} />
+      </mesh>
+      <pointLight position={[0, 0.36, 0.17]} color="#FFDFA8" intensity={0.6} distance={1.4} decay={2} />
+    </group>
+  );
+}
+
+const STATION = [
+  { chair: '#E07B39', mat: '#2E3138', mug: '#FFFFFF' },
+  { chair: '#3F8F5F', mat: '#55654F', mug: '#E07B39' },
+  { chair: '#2F5FC4', mat: '#6B4636', mug: '#2F5FC4' },
+  { chair: '#E3A72F', mat: '#39456B', mug: '#F4C7C3' },
+] as const;
+
 /**
- * One seat at the shared desk. Local frame: desk centre line at z = 0, the sitter at z = +1.25 facing -z.
- * `flip` turns the whole station around for the far side of the desk.
+ * One seat at the shared desk, each with its own setup (`variant` 0–3).
+ * Local frame: desk centre line at z = 0, the sitter at z = +1.25 facing -z. `flip` turns it to the far side.
+ * One screen always shows the agent's status; the other shows code.
  */
-export function Workstation({ x, flip, pose, accent, children }: { x: number; flip: boolean; pose: Pose | null; accent: string; children?: ReactNode }) {
+export function Workstation({ x, flip, variant, pose, accent, children }: { x: number; flip: boolean; variant: number; pose: Pose | null; accent: string; children?: ReactNode }) {
   const active = pose !== null && pose !== 'idle';
+  const status: ScreenKind = active ? (pose as Exclude<Pose, 'idle'>) : 'off';
+  const code: ScreenKind = active ? 'code' : 'off';
+  const st = STATION[variant % STATION.length]!;
+  const top = 0.78;
   return (
     <group position={[x, 0, 0]} rotation={[0, flip ? Math.PI : 0, 0]}>
-      <Monitor at={[-0.31, 0.78, 0.3]} yaw={0.2} kind={active ? 'code' : 'off'} />
-      <Monitor at={[0.31, 0.78, 0.3]} yaw={-0.2} kind={active ? (pose as Exclude<Pose, 'idle'>) : 'off'} accent={accent} />
-      {active && <pointLight position={[0, 1.1, 0.55]} color={accent} intensity={0.5} distance={1.6} decay={2} />}
-      {/* keyboard, mouse, mug, notebook */}
-      <RoundedBox args={[0.42, 0.018, 0.14]} radius={0.006} position={[0, 0.79, 0.7]} castShadow>
-        <meshStandardMaterial color="#ECECEA" roughness={0.5} />
+      {variant % 4 === 0 && (
+        <>
+          <Monitor at={[-0.31, top, 0.32]} yaw={0.2} kind={code} arm />
+          <Monitor at={[0.31, top, 0.32]} yaw={-0.2} kind={status} accent={accent} arm />
+          <DeskLamp at={[-0.82, top, 0.4]} />
+        </>
+      )}
+      {variant % 4 === 1 && (
+        <>
+          <Monitor at={[0.12, top, 0.3]} yaw={0} kind={status} accent={accent} w={0.98} h={0.38} />
+          <Laptop at={[-0.7, top, 0.52]} yaw={0.45} kind={code} />
+          <mesh position={[0.82, top + 0.11, 0.42]} castShadow>
+            <cylinderGeometry args={[0.035, 0.035, 0.22, 14]} />
+            <meshStandardMaterial color="#7DB7C9" roughness={0.2} metalness={0.3} />
+          </mesh>
+        </>
+      )}
+      {variant % 4 === 2 && (
+        <>
+          <Monitor at={[-0.2, top, 0.3]} yaw={0.12} kind={status} accent={accent} w={0.62} h={0.38} />
+          <Monitor at={[0.42, top, 0.34]} yaw={-0.32} kind={code} w={0.34} h={0.56} arm />
+          <Plant at={[-0.8, top, 0.42]} scale={0.26} />
+        </>
+      )}
+      {variant % 4 === 3 && (
+        <>
+          <Monitor at={[0.22, top, 0.3]} yaw={-0.08} kind={status} accent={accent} w={0.68} h={0.42} arm />
+          <Laptop at={[-0.52, top, 0.46]} yaw={0.3} kind={code} />
+          {['#C2552D', '#E8E2D4', '#3A4F7A'].map((c, i) => (
+            <Box key={c} at={[0.84, top + 0.02 + i * 0.035, 0.45]} size={[0.24 - i * 0.02, 0.033, 0.17]} color={c} rot={[0, 0.2 * i, 0]} />
+          ))}
+        </>
+      )}
+      {active && <pointLight position={[0, 1.15, 0.55]} color={accent} intensity={0.5} distance={1.6} decay={2} />}
+      {/* felt desk mat, keyboard, mouse, mug */}
+      <RoundedBox args={[0.82, 0.006, 0.34]} radius={0.003} position={[0.04, top + 0.003, 0.72]} receiveShadow>
+        <meshStandardMaterial color={st.mat} roughness={1} />
       </RoundedBox>
-      <RoundedBox args={[0.06, 0.025, 0.1]} radius={0.012} position={[0.33, 0.792, 0.72]} castShadow>
-        <meshStandardMaterial color="#ECECEA" roughness={0.4} />
+      <RoundedBox args={[0.42, 0.018, 0.14]} radius={0.006} position={[0, top + 0.016, 0.7]} castShadow>
+        <meshStandardMaterial color={variant % 2 ? '#2B2D31' : '#ECECEA'} roughness={0.5} />
       </RoundedBox>
-      <mesh position={[-0.52, 0.83, 0.62]} castShadow>
+      <RoundedBox args={[0.06, 0.025, 0.1]} radius={0.012} position={[0.33, top + 0.018, 0.72]} castShadow>
+        <meshStandardMaterial color={variant % 2 ? '#2B2D31' : '#ECECEA'} roughness={0.4} />
+      </RoundedBox>
+      <mesh position={[-0.52, top + 0.05, 0.76]} castShadow>
         <cylinderGeometry args={[0.04, 0.035, 0.09, 16]} />
-        <meshStandardMaterial color="#FFFFFF" roughness={0.3} />
+        <meshStandardMaterial color={st.mug} roughness={0.3} />
       </mesh>
-      <Box at={[0.6, 0.787, 0.6]} size={[0.2, 0.012, 0.27]} color="#F4F1EA" rot={[0, 0.25, 0]} />
-      <Box at={[0.6, 0.796, 0.6]} size={[0.2, 0.006, 0.27]} color="#3A4F7A" rot={[0, 0.32, 0]} />
       <group position={[0, 0, 1.25]}>
-        <Chair />
+        <Chair accent={st.chair} />
         {children}
       </group>
     </group>
   );
 }
 
-/** The big shared table (centre at the origin), like a bench desk for four. */
+const FELT = ['#8FA58B', '#C98263'];
+
+/** The shared four-seat bench: wood top, white central spine with planters and felt screens, loop legs. */
 export function SharedDesk() {
   const wood = woodTexture();
+  const white = '#F1EEE8';
   return (
     <group>
-      <RoundedBox args={[5.5, 0.06, 1.95]} radius={0.015} smoothness={3} position={[0, 0.75, 0]} castShadow receiveShadow>
-        <meshStandardMaterial map={wood} roughness={0.55} />
+      <RoundedBox args={[5.5, 0.05, 1.95]} radius={0.02} smoothness={3} position={[0, 0.755, 0]} castShadow receiveShadow>
+        <meshStandardMaterial map={wood} roughness={0.5} />
       </RoundedBox>
-      <Box at={[0, 0.7, 0]} size={[5.2, 0.05, 0.12]} color={DARK} rough={0.5} />
+      <Box at={[0, 0.715, 0]} size={[5.3, 0.03, 1.8]} color={white} rough={0.5} />
+      {/* loop legs at both ends + a cable tray */}
       {[-2.55, 2.55].map((x) => (
         <group key={x} position={[x, 0, 0]}>
-          <Box at={[0, 0.69, 0]} size={[0.08, 0.06, 1.7]} color={DARK} rough={0.5} />
-          {[-1, 1].map((s) => (
-            <Box key={s} at={[0, 0.35, 0.7 * s]} size={[0.07, 0.74, 0.09]} color={DARK} rough={0.5} rot={[0.16 * s, 0, 0]} />
+          {[-0.8, 0.8].map((z) => (
+            <RoundedBox key={z} args={[0.07, 0.7, 0.07]} radius={0.02} position={[0, 0.35, z]} castShadow>
+              <meshStandardMaterial color={white} roughness={0.4} />
+            </RoundedBox>
           ))}
+          <RoundedBox args={[0.07, 0.05, 1.67]} radius={0.02} position={[0, 0.025, 0]} castShadow>
+            <meshStandardMaterial color={white} roughness={0.4} />
+          </RoundedBox>
         </group>
       ))}
-      {/* drawer pedestals + PC towers between the seats */}
+      <Box at={[0, 0.6, 0]} size={[4.9, 0.02, 0.3]} color="#C9CCD1" rough={0.4} metal={0.5} />
+      {/* drawer pedestals in two finishes + PC towers */}
       {[-1, 1].map((s) => (
         <group key={s} position={[0, 0, 0.55 * s]}>
-          <RoundedBox args={[0.46, 0.66, 0.6]} radius={0.015} position={[0, 0.36, 0]} castShadow receiveShadow>
-            <meshStandardMaterial color={CREAM} roughness={0.6} />
+          <RoundedBox args={[0.46, 0.64, 0.6]} radius={0.02} position={[0, 0.36, 0]} castShadow receiveShadow>
+            <meshStandardMaterial color={s > 0 ? white : WALNUT} roughness={0.6} />
           </RoundedBox>
-          {[0.56, 0.36].map((y) => (
-            <Box key={y} at={[0, y, 0.305 * s]} size={[0.1, 0.02, 0.012]} color={DARK} shadow={false} />
+          {[0.56, 0.38, 0.2].map((y) => (
+            <Box key={y} at={[0, y, 0.305 * s]} size={[0.14, 0.018, 0.012]} color={s > 0 ? '#B98A57' : '#E9E2D4'} shadow={false} />
           ))}
-          {[-0.42, 0.42].map((x) => (
-            <Box key={x} at={[x, 0.24, -0.05 * s]} size={[0.2, 0.44, 0.45]} color="#26272B" rough={0.4} />
+          {[-0.44, 0.44].map((x) => (
+            <group key={x}>
+              <RoundedBox args={[0.2, 0.44, 0.45]} radius={0.015} position={[x, 0.24, -0.05 * s]} castShadow>
+                <meshStandardMaterial color="#232428" roughness={0.4} />
+              </RoundedBox>
+              <Box at={[x, 0.3, (0.18 - 0.05) * s]} size={[0.16, 0.01, 0.006]} color="#7DCFFF" shadow={false} />
+            </group>
           ))}
         </group>
       ))}
-      {/* fabric dividers with a metal frame */}
-      {[-1.4, 1.4].map((x) => (
-        <group key={x} position={[x, 0, 0]}>
-          <RoundedBox args={[1.05, 0.26, 0.035]} radius={0.015} position={[0, 0.96, 0]} castShadow>
-            <meshStandardMaterial color="#B9B2A7" roughness={1} />
+      {/* central spine: power channel, planters, felt privacy screens in two colours */}
+      <RoundedBox args={[5.1, 0.07, 0.2]} radius={0.02} position={[0, 0.815, 0]} castShadow receiveShadow>
+        <meshStandardMaterial color={white} roughness={0.45} />
+      </RoundedBox>
+      {[-1.4, 1.4].map((x, i) => (
+        <RoundedBox key={x} args={[1.5, 0.36, 0.035]} radius={0.016} position={[x, 1.03, 0]} castShadow>
+          <meshStandardMaterial color={FELT[i]!} roughness={1} />
+        </RoundedBox>
+      ))}
+      {[-2.4, 0, 2.4].map((x) => (
+        <group key={x} position={[x, 0.85, 0]}>
+          <RoundedBox args={[0.5, 0.14, 0.2]} radius={0.02} position={[0, 0.07, 0]} castShadow>
+            <meshStandardMaterial color={WALNUT} roughness={0.6} />
           </RoundedBox>
-          {[-0.56, 0.56].map((dx) => (
-            <Box key={dx} at={[dx, 0.9, 0]} size={[0.04, 0.26, 0.06]} color={DARK} rough={0.5} />
+          {[-0.16, -0.05, 0.07, 0.17].map((dx, k) => (
+            <mesh key={dx} position={[dx, 0.2 + (k % 2) * 0.05, (k % 2 ? 0.02 : -0.02)]} castShadow>
+              <icosahedronGeometry args={[0.085 + (k % 2) * 0.02, 1]} />
+              <meshStandardMaterial color={k % 2 ? '#4C9C6B' : '#2F7A4F'} roughness={0.9} flatShading />
+            </mesh>
           ))}
         </group>
       ))}
