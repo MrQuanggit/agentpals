@@ -1,6 +1,6 @@
 # AgentPals
 
-Ứng dụng chạy local, biến các agent **Claude Code** và **Codex CLI** đang chạy trên máy bạn thành những nhân vật ngồi trong một văn phòng isometric. Mỗi nhân vật có bàn riêng với 2 màn hình: gõ phím khi agent sửa file, chống cằm đọc khi agent tìm kiếm, giơ tay khi agent cần bạn duyệt, và ra pantry cầm cốc cà phê khi hết việc. Nhân vật tuỳ chỉnh được tên, ngoại hình và câu nói.
+Ứng dụng chạy local, biến các agent **Claude Code** và **Codex CLI** đang chạy trên máy bạn thành những nhân vật ngồi trong một văn phòng 3D (Three.js) xoay và phóng to được. Mỗi nhân vật có bàn riêng với 2 màn hình: gõ phím khi agent sửa file, chống cằm đọc khi agent tìm kiếm, giơ tay khi agent cần bạn duyệt, và ra pantry cầm cốc cà phê khi hết việc. Nhân vật tuỳ chỉnh được tên, ngoại hình và câu nói.
 
 ![AgentPals](docs/screenshot.png)
 
@@ -39,7 +39,7 @@ Claude Code / Codex ──hook (stdin JSON)──> hooks/claude-hook.mjs ──P
 
 - `packages/core` – kiểu `AgentEvent`, `AgentState`, reducer `applyEvent`.
 - `packages/server` – Hono + ws, provider Claude và Codex, cài/gỡ hook, CLI.
-- `packages/ui` – React + Vite, văn phòng isometric vẽ bằng SVG. Server phục vụ bản build trên cùng port.
+- `packages/ui` – React + Vite; văn phòng 3D bằng three.js / react-three-fiber (tự chuyển về bản SVG phẳng nếu máy không có WebGL). Server phục vụ bản build trên cùng port.
 - `hooks/claude-hook.mjs` – script cả hai agent gọi (`--source codex` cho Codex); luôn exit 0, không bao giờ làm chậm agent.
 
 ## Bảo mật

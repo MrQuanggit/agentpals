@@ -1,6 +1,7 @@
 import { useAgents, type Connection } from '@/lib/useAgents';
 import { DEFAULT_LOOKS, SOURCE_LABEL, STATUS, agentName } from '@/lib/look';
-import { Office, PANTRY_COUNT, SEAT_COUNT, placedCount } from './Office';
+import { PANTRY_COUNT, SEAT_COUNT, placedCount } from './Office';
+import { OfficeView } from './OfficeView';
 
 const CONN_TEXT: Record<Connection, string> = {
   connecting: 'Đang kết nối…',
@@ -34,7 +35,8 @@ export function Dashboard() {
               ))}
             </div>
           </div>
-          <Office agents={agents} />
+          <OfficeView agents={agents} />
+          <p className="muted hint">Kéo để xoay, cuộn để phóng to.</p>
           {extra > 0 && <p className="muted">+{extra} agent chưa có chỗ trong văn phòng ({SEAT_COUNT} bàn, {PANTRY_COUNT} chỗ ở pantry), xem danh sách bên phải.</p>}
         </section>
 
